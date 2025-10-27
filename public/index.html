@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube para MP3 Pro</title>
+    <style>
+        :root {
+            --bg-grad-start: #1f005c;
+            --bg-grad-end: #5b0060;
+            --container-bg: rgba(255, 255, 255, 0.1);
+            --text-color: #f0f0f0;
+            --primary-color: #be2edd;
+            --primary-grad-start: #c0392b;
+            --primary-grad-end: #e74c3c;
+            --success-color: #2ecc71;
+            --progress-bg: rgba(0, 0, 0, 0.2);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: linear-gradient(135deg, var(--bg-grad-start) 0%, var(--bg-grad-end) 100%);
+            color: var(--text-color);
+            min-height: 100vh; 
+            padding: 24px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px; 
+            margin: 0 auto; 
+            background: var(--container-bg);
+            border-radius: 20px; 
+            box-shadow: 0 15px 35px rgba(0,0,0,0.3);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            overflow: hidden;
+            display: grid;
+            grid-template-columns: 1fr;
+        }
+
+        @media (min-width: 800px) {
+            .container {
+                grid-template-columns: 350px 1fr;
+            }
+        }
+
+        .sidebar {
+            padding: 32px;
+            background: rgba(0,0,0,0.1);
+        }
+        
+        .header h1 { 
+            font-size: 2.2em; 
+            font-weight: 700;
+            margin-bottom: 8px; 
+            background: linear-gradient(90deg, #f8ff00, #3ad59f);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .header p {
+            font-size: 1em;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 24px;
+        }
+
+        .url-form textarea {
+            width: 100%;
+            padding: 14px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            background: rgba(0,0,0,0.2);
+            border-radius: 8px; 
+            font-size: 15px;
+            color: var(--text-color);
+            resize: vertical;
+            min-height: 80px;
+            font-family: inherit;
+        }
+        .url-form textarea::placeholder { color: rgba(255, 255, 255, 0.5); }
+
+        .url-form button {
+            width: 100%;
+            padding: 15px 30px; 
+            background: linear-gradient(135deg, var(--primary-grad-start) 0%, var(--primary-grad-end) 100%);
+            color: white; 
+            border: none; 
+            border-radius: 8px; 
+            font-size: 16px; 
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 16px;
+            transition: all 0.3s ease;
+        }
+        .url-form button:hover { box-shadow: 0 5px 15px rgba(231, 76, 60, 0.4); }
+        .url-form button:disabled { 
+            background: #555; 
+            cursor: not-allowed; 
+            box-shadow: none; 
+        }
+
+        .main-content {
+            padding: 32px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        /* --- Seção de Processo --- */
+        .process-container { display: none; margin-top: 24px; }
+        .process-container h3 { font-size: 1.2em; margin-bottom: 16px; }
+        
+        .progress-label {
+            font-size: 0.9em;
+            color: rgba(255,255,255,0.8);
+            margin-bottom: 6px;
+            margin-top: 12px;
+            /* Evita que o texto pule */
+            min-height: 1.2em; 
+        }
+        
+        .progress-bar {
+            width: 100%; 
+            height: 10px; 
+            background: var(--progress-bg); 
+            border-radius: 5px; 
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%; 
+            background: linear-gradient(90deg, #f0932b, #ff5252); /* Laranja/Vermelho para Download */
+            transition: width 0.3s ease; 
+            width: 0%;
+        }
+
+        #overallProgressFill {
+            background: var(--success-color); /* Verde para Total */
+        }
+        
+        /* *** NOVA ANIMAÇÃO DE CONVERSÃO *** */
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+        
+        .converting #currentFileProgressFill {
+            background: linear-gradient(90deg, #4e54c8, #8f94fb); /* Roxo/Azul para Conversão */
+            animation: pulse 1.5s infinite;
+        }
+        /* *** FIM DA NOVA ANIMAÇÃO *** */
+
+
+        /* --- Log de Mensagens --- */
+        .messages {
+            margin-top: 20px; 
+            padding: 15px; 
+            background: rgba(0,0,0,0.3); 
+            border-radius: 8px; 
+            max-height: 150px; 
+            overflow-y: auto;
+            font-size: 0.9em;
+        }
+        .message { padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .message:last-child { border-bottom: none; }
+        .message.error { color: #ff6b6b; font-weight: bold; }
+
+        /* --- Seção de Downloads --- */
+        .downloads-section {
+            margin-top: 24px;
+        }
+        .downloads-section h3 { 
+            font-size: 1.5em; 
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        #filesList { max-height: 400px; overflow-y: auto; }
+
+        .file-item {
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            padding: 14px; 
+            background: rgba(255, 255, 255, 0.05); 
+            margin-bottom: 8px; 
+            border-radius: 8px;
+            transition: background 0.2s ease;
+        }
+        .file-item:hover { background: rgba(255, 255, 255, 0.1); }
+        
+        .file-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            overflow: hidden;
+        }
+        .file-info span {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-size: 0.95em;
+        }
+        .file-icon {
+            flex-shrink: 0;
+            width: 20px;
+            height: 20px;
+            opacity: 0.8;
+        }
+
+        .download-btn {
+            padding: 8px 14px; 
+            background: var(--success-color); 
+            color: white; 
+            border: none; 
+            border-radius: 6px; 
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 0.9em;
+            font-weight: 500;
+            flex-shrink: 0;
+            transition: background 0.2s ease;
+        }
+        .download-btn:hover { background: #27ae60; }
+        .zip-btn { background: var(--primary-color); }
+        .zip-btn:hover { background: #a518b9; }
+
+        #noFilesMessage { color: rgba(255,255,255,0.6); }
+
+    </style>
+</head>
+<body>
+
+    <svg width="0" height="0" style="position:absolute">
+        <defs>
+            <symbol id="icon-music" viewBox="0 0 24 24">
+                <path fill="currentColor" d="M12 3v10.55c-.59-.34-1.27-.55-2-.55c-2.21 0-4 1.79-4 4s1.79 4 4 4s4-1.79 4-4V7h4V3h-6Z"/>
+            </symbol>
+            <symbol id="icon-zip" viewBox="0 0 24 24">
+                <path fill="currentColor" d="M20 6h-8L10 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2m-2 6h-2v2h2v2h-2v2h-2v-2h2v-2h-2v-2h2v-2h-2V8h2v2h2Z"/>
+            </symbol>
+            <symbol id="icon-download" viewBox="0 0 24 24">
+                 <path fill="currentColor" d="M19.35 10.04C18.67 6.59 15.64 4 12 4C9.11 4 6.6 5.64 5.35 8.04C2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5c0-2.64-2.05-4.78-4.65-4.96M17 13l-5 5l-5-5h3V9h4v4h3Z"/>
+            </symbol>
+        </defs>
+    </svg>
+
+    <div class="container">
+        <div class="sidebar">
+            <div class="header">
+                <h1>Downloader Pro</h1>
+                <p>Converta vídeos ou playlists do YouTube para MP3.</p>
+            </div>
+    
+            <div class="url-form">
+                <textarea id="videoUrls" rows="5" placeholder="Cole um ou mais links do YouTube aqui (um por linha)..."></textarea>
+                <button id="convertBtn">
+                    <svg viewBox="0 0 24 24" width="16" height="16" style="vertical-align: middle; margin-right: 8px;" fill="currentColor"><use href="#icon-download"></use></svg>
+                    <span>Converter</span>
+                </button>
+            </div>
+
+            <div class="process-container" id="processContainer">
+                <h3>Status do Processo</h3>
+
+                <div class="progress-label" id="currentFileText">Aguardando...</div>
+                <div class="progress-bar" id="currentFileProgressBar"> <div class="progress-fill" id="currentFileProgressFill"></div>
+                </div>
+
+                <div class="progress-label" id="overallProgressText">Progresso Total</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="overallProgressFill"></div>
+                </div>
+
+                <div class="messages" id="messages"></div>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div classs="downloads-section">
+                <h3>Arquivos Prontos (Este Job)</h3>
+                <div id="filesList">
+                    <p id="noFilesMessage">Nenhum arquivo gerado neste job ainda.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+
+        // --- Elementos do DOM ---
+        const processContainer = document.getElementById('processContainer');
+        const currentFileProgressBar = document.getElementById('currentFileProgressBar'); // Pai da barra
+        const currentFileProgressFill = document.getElementById('currentFileProgressFill');
+        const currentFileText = document.getElementById('currentFileText');
+        const overallProgressFill = document.getElementById('overallProgressFill');
+        const overallProgressText = document.getElementById('overallProgressText');
+        const messagesDiv = document.getElementById('messages');
+        const convertBtn = document.getElementById('convertBtn');
+        const convertBtnText = convertBtn.querySelector('span');
+        const videoUrlsInput = document.getElementById('videoUrls');
+        const filesListDiv = document.getElementById('filesList');
+        const noFilesMessage = document.getElementById('noFilesMessage');
+
+        // --- Variáveis de Estado ---
+        let totalJobCount = 1;
+
+        // --- Eventos do Socket ---
+        socket.on('process-started', (data) => {
+            showProcess();
+            addMessage(data.message);
+            disableForm();
+            totalJobCount = 1;
+        });
+
+        socket.on('playlist-info', (data) => {
+            totalJobCount = data.total;
+            overallProgressText.textContent = `Progresso Total: ${data.current} / ${data.total}`;
+        });
+
+        socket.on('video-info', (data) => {
+             currentFileText.textContent = `Baixando [${data.current}/${data.total}]: ${data.title}`;
+        });
+
+        socket.on('download-progress', (data) => {
+            // *** MUDANÇA ***
+            currentFileProgressBar.classList.remove('converting'); // Garante a cor de download
+            currentFileProgressFill.style.width = data.progress + '%';
+            currentFileText.textContent = data.message; 
+            updateLastMessage(data.message);
+        });
+        
+        socket.on('conversion-started', (data) => {
+            // *** MUDANÇA (A CORREÇÃO PRINCIPAL) ***
+            currentFileText.textContent = data.message; // 1. Atualiza o rótulo principal
+            currentFileProgressBar.classList.add('converting'); // 2. Ativa a animação de pulso
+            addMessage(data.message); // 3. Adiciona ao log
+        });
+
+        socket.on('conversion-complete', (data) => {
+            // *** MUDANÇA ***
+            currentFileProgressBar.classList.remove('converting'); // Remove a animação
+            addMessage(data.message);
+            
+            const overallPct = (data.current / data.total) * 100;
+            overallProgressFill.style.width = overallPct + '%';
+            overallProgressText.textContent = `Progresso Total: ${data.current} / ${data.total}`;
+            
+            currentFileProgressFill.style.width = '0%';
+            currentFileText.textContent = 'Convertido. Aguardando próximo...';
+
+            addFileToList(data.filename);
+        });
+
+        socket.on('zip-started', (data) => addMessage(data.message));
+        
+        socket.on('zip-complete', (data) => {
+            addMessage(data.message);
+            addFileToList(data.filename);
+        });
+
+        socket.on('process-complete', (data) => {
+            addMessage(data.message);
+            enableForm();
+            resetProgress();
+        });
+
+        socket.on('process-error', (data) => {
+            addMessage('❌ Erro: ' + data.error, true);
+            currentFileProgressBar.classList.remove('converting'); // Para animação em caso de erro
+            enableForm();
+        });
+
+        // --- Funções Auxiliares ---
+        function showProcess() {
+            processContainer.style.display = 'block';
+            currentFileProgressFill.style.width = '0%';
+            overallProgressFill.style.width = '0%';
+            messagesDiv.innerHTML = '';
+            currentFileText.textContent = 'Iniciando...';
+            overallProgressText.textContent = 'Progresso Total';
+            // *** MUDANÇA ***
+            currentFileProgressBar.classList.remove('converting'); // Reseta a animação
+        }
+
+        function addMessage(message, isError = false) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = isError ? 'message error' : 'message';
+            messageDiv.textContent = message;
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function updateLastMessage(message) {
+            const messages = messagesDiv.getElementsByClassName('message');
+            if (messages.length > 0) {
+                messages[messages.length - 1].textContent = message;
+            } else {
+                addMessage(message);
+            }
+        }
+
+        function disableForm() {
+            convertBtn.disabled = true;
+            videoUrlsInput.disabled = true;
+            convertBtnText.textContent = 'Processando...';
+        }
+
+        function enableForm() {
+            convertBtn.disabled = false;
+            videoUrlsInput.disabled = false;
+            convertBtnText.textContent = 'Converter';
+        }
+
+        function resetProgress() {
+            setTimeout(() => {
+                currentFileProgressFill.style.width = '0%';
+            }, 2000);
+        }
+
+        function addFileToList(filename) {
+            noFilesMessage.style.display = 'none'; 
+
+            const isZip = filename.endsWith('.zip');
+            const iconId = isZip ? '#icon-zip' : '#icon-music';
+            const btnClass = isZip ? 'download-btn zip-btn' : 'download-btn';
+
+            const fileItem = document.createElement('div');
+            fileItem.className = 'file-item';
+            fileItem.innerHTML = `
+                <div class="file-info">
+                    <svg class="file-icon" width="24" height="24"><use href="${iconId}"></use></svg>
+                    <span>${filename}</span>
+                </div>
+                <a href="/api/download/${encodeURIComponent(filename)}" class="${btnClass}" target="_blank">Download</a>
+            `;
+            filesListDiv.prepend(fileItem);
+        }
+
+
+        // --- Event Listeners ---
+        convertBtn.addEventListener('click', () => {
+            const urls = videoUrlsInput.value.trim();
+            if (!urls) {
+                alert('Por favor, cole pelo menos um link do YouTube');
+                return;
+            }
+
+            filesListDiv.innerHTML = '';
+            noFilesMessage.style.display = 'block'; 
+            
+            socket.emit('download-video', { urls });
+        });
+
+    </script>
+</body>
+</html>
