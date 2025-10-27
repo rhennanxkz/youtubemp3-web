@@ -36,21 +36,20 @@ app.use(express.json());
 app.use(express.static(publicDir));
 // Servir 'downloads' como estático permite o link de download <a> funcionar
 app.use('/downloads', express.static(downloadsDir)); 
-app.use('/api/download', express.static(downloadsDir)); // Rota de fallback para o link
+// A rota estática de /api/download foi movida para DEPOIS da rota da API
 
 // --- Rotas da API ---
-app.get('/', (req, res) => {
-  // O express.static já cuida disso, mas mantemos por clareza
-  res.sendFile(path.join(publicDir, 'index.html'));
-});
 
-// API para baixar arquivos (ainda necessária)
+// ===================================================================
+// INÍCIO DA CORREÇÃO
+// Esta rota específica DEVE vir ANTES da rota estática app.use('/api/download', ...)
+// para garantir que res.download() seja chamado.
 app.get('/api/download/:filename', (req, res) => {
   const filename = req.params.filename;
   const filePath = path.join(downloadsDir, filename);
   
   if (fs.existsSync(filePath)) {
-    // res.download() força o download
+    // res.download() força o download (define Content-Disposition: attachment)
     res.download(filePath, (err) => {
       if (err) {
         console.error("Erro ao enviar arquivo:", err);
@@ -61,6 +60,16 @@ app.get('/api/download/:filename', (req, res) => {
     console.warn(`Tentativa de baixar arquivo não existente: ${filename}`);
     res.status(404).json({ error: 'Arquivo não encontrado' });
   }
+});
+// FIM DA CORREÇÃO
+// ===================================================================
+
+// Rota de fallback para /api/download (agora vem DEPOIS da específica)
+app.use('/api/download', express.static(downloadsDir)); 
+
+app.get('/', (req, res) => {
+  // O express.static já cuida disso, mas mantemos por clareza
+  res.sendFile(path.join(publicDir, 'index.html'));
 });
 
 // --- Lógica do Socket.io ---
@@ -482,7 +491,3 @@ server.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Servidor Downloader Pro rodando na porta ${PORT}`);
   console.log(`💡 Acesse em http://localhost:${PORT} ou pela sua rede local.`);
 });
-
-
-
-
