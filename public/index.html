@@ -4,238 +4,50 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>YouTube para MP3 Pro</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts (Inter) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
     <style>
-        :root {
-            --bg-grad-start: #1f005c;
-            --bg-grad-end: #5b0060;
-            --container-bg: rgba(255, 255, 255, 0.1);
-            --text-color: #f0f0f0;
-            --primary-color: #be2edd;
-            --primary-grad-start: #c0392b;
-            --primary-grad-end: #e74c3c;
-            --success-color: #2ecc71;
-            --progress-bg: rgba(0, 0, 0, 0.2);
+        /* Estilização base com a fonte Inter */
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background: linear-gradient(135deg, var(--bg-grad-start) 0%, var(--bg-grad-end) 100%);
-            color: var(--text-color);
-            min-height: 100vh; 
-            padding: 24px;
-            display: flex;
-            justify-content: center;
-            align-items: flex-start;
-        }
-
-        .container {
-            width: 100%;
-            max-width: 900px; 
-            margin: 0 auto; 
-            background: var(--container-bg);
-            border-radius: 20px; 
-            box-shadow: 0 15px 35px rgba(0,0,0,0.3);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            overflow: hidden;
-            display: grid;
-            grid-template-columns: 1fr;
-        }
-
-        @media (min-width: 800px) {
-            .container {
-                grid-template-columns: 350px 1fr;
-            }
-        }
-
-        .sidebar {
-            padding: 32px;
-            background: rgba(0,0,0,0.1);
-        }
-        
-        .header h1 { 
-            font-size: 2.2em; 
-            font-weight: 700;
-            margin-bottom: 8px; 
-            background: linear-gradient(90deg, #f8ff00, #3ad59f);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        .header p {
-            font-size: 1em;
-            color: rgba(255, 255, 255, 0.7);
-            margin-bottom: 24px;
-        }
-
-        .url-form textarea {
-            width: 100%;
-            padding: 14px;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            background: rgba(0,0,0,0.2);
-            border-radius: 8px; 
-            font-size: 15px;
-            color: var(--text-color);
-            resize: vertical;
-            min-height: 80px;
-            font-family: inherit;
-        }
-        .url-form textarea::placeholder { color: rgba(255, 255, 255, 0.5); }
-
-        .url-form button {
-            width: 100%;
-            padding: 15px 30px; 
-            background: linear-gradient(135deg, var(--primary-grad-start) 0%, var(--primary-grad-end) 100%);
-            color: white; 
-            border: none; 
-            border-radius: 8px; 
-            font-size: 16px; 
-            font-weight: 600;
-            cursor: pointer;
-            margin-top: 16px;
-            transition: all 0.3s ease;
-        }
-        .url-form button:hover { box-shadow: 0 5px 15px rgba(231, 76, 60, 0.4); }
-        .url-form button:disabled { 
-            background: #555; 
-            cursor: not-allowed; 
-            box-shadow: none; 
-        }
-
-        .main-content {
-            padding: 32px;
-            max-height: 80vh;
-            overflow-y: auto;
-        }
-
-        /* --- Seção de Processo --- */
-        .process-container { display: none; margin-top: 24px; }
-        .process-container h3 { font-size: 1.2em; margin-bottom: 16px; }
-        
-        .progress-label {
-            font-size: 0.9em;
-            color: rgba(255,255,255,0.8);
-            margin-bottom: 6px;
-            margin-top: 12px;
-            /* Evita que o texto pule */
-            min-height: 1.2em; 
-        }
-        
-        .progress-bar {
-            width: 100%; 
-            height: 10px; 
-            background: var(--progress-bg); 
-            border-radius: 5px; 
-            overflow: hidden;
-        }
-        
-        .progress-fill {
-            height: 100%; 
-            background: linear-gradient(90deg, #f0932b, #ff5252); /* Laranja/Vermelho para Download */
-            transition: width 0.3s ease; 
-            width: 0%;
-        }
-
-        #overallProgressFill {
-            background: var(--success-color); /* Verde para Total */
-        }
-        
-        /* *** NOVA ANIMAÇÃO DE CONVERSÃO *** */
+        /* Animação de pulso para conversão */
         @keyframes pulse {
-            0% { opacity: 1; }
+            0%, 100% { opacity: 1; }
             50% { opacity: 0.7; }
-            100% { opacity: 1; }
         }
-        
-        .converting #currentFileProgressFill {
-            background: linear-gradient(90deg, #4e54c8, #8f94fb); /* Roxo/Azul para Conversão */
-            animation: pulse 1.5s infinite;
-        }
-        /* *** FIM DA NOVA ANIMAÇÃO *** */
-
-
-        /* --- Log de Mensagens --- */
-        .messages {
-            margin-top: 20px; 
-            padding: 15px; 
-            background: rgba(0,0,0,0.3); 
-            border-radius: 8px; 
-            max-height: 150px; 
-            overflow-y: auto;
-            font-size: 0.9em;
-        }
-        .message { padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.1); }
-        .message:last-child { border-bottom: none; }
-        .message.error { color: #ff6b6b; font-weight: bold; }
-
-        /* --- Seção de Downloads --- */
-        .downloads-section {
-            margin-top: 24px;
-        }
-        .downloads-section h3 { 
-            font-size: 1.5em; 
-            margin-bottom: 16px;
-            padding-bottom: 8px;
-            border-bottom: 1px solid rgba(255,255,255,0.2);
-        }
-        
-        #filesList { max-height: 400px; overflow-y: auto; }
-
-        .file-item {
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            padding: 14px; 
-            background: rgba(255, 255, 255, 0.05); 
-            margin-bottom: 8px; 
-            border-radius: 8px;
-            transition: background 0.2s ease;
-        }
-        .file-item:hover { background: rgba(255, 255, 255, 0.1); }
-        
-        .file-info {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            overflow: hidden;
-        }
-        .file-info span {
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            font-size: 0.95em;
-        }
-        .file-icon {
-            flex-shrink: 0;
-            width: 20px;
-            height: 20px;
-            opacity: 0.8;
+        .converting-pulse {
+            animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
 
-        .download-btn {
-            padding: 8px 14px; 
-            background: var(--success-color); 
-            color: white; 
-            border: none; 
-            border-radius: 6px; 
-            cursor: pointer;
-            text-decoration: none;
-            font-size: 0.9em;
-            font-weight: 500;
-            flex-shrink: 0;
-            transition: background 0.2s ease;
+        /* Scrollbar customizada (versão light) */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
         }
-        .download-btn:hover { background: #27ae60; }
-        .zip-btn { background: var(--primary-color); }
-        .zip-btn:hover { background: #a518b9; }
-
-        #noFilesMessage { color: rgba(255,255,255,0.6); }
-
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.05);
+            border-radius: 3px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #22d3ee; /* Cyan-400 */
+            border-radius: 3px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #06b6d4; /* Cyan-500 */
+        }
     </style>
 </head>
-<body>
+<body class="bg-slate-100 text-gray-800 min-h-screen flex items-center justify-center p-4">
 
+    <!-- Ícones SVG embutidos (mesmos ícones) -->
     <svg width="0" height="0" style="position:absolute">
         <defs>
             <symbol id="icon-music" viewBox="0 0 24 24">
@@ -247,74 +59,146 @@
             <symbol id="icon-download" viewBox="0 0 24 24">
                  <path fill="currentColor" d="M19.35 10.04C18.67 6.59 15.64 4 12 4C9.11 4 6.6 5.64 5.35 8.04C2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5c0-2.64-2.05-4.78-4.65-4.96M17 13l-5 5l-5-5h3V9h4v4h3Z"/>
             </symbol>
+            <symbol id="icon-spinner" viewBox="0 0 24 24">
+                <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 3a9 9 0 1 0 9 9M21 12h-3m-3-9v3m-9 6h3m3 9v-3"></path>
+            </symbol>
+            <symbol id="icon-restart" viewBox="0 0 24 24">
+                <path fill="currentColor" d="M18.3 5.71a.996.996 0 0 0-1.41 0L12 10.59L7.11 5.7A.996.996 0 1 0 5.7 7.11L10.59 12L5.7 16.89a.996.996 0 1 0 1.41 1.41L12 13.41l4.89 4.89a.996.996 0 1 0 1.41-1.41L13.41 12l4.89-4.89c.38-.38.38-1.02 0-1.4z"/>
+            </symbol>
         </defs>
     </svg>
 
-    <div class="container">
-        <div class="sidebar">
-            <div class="header">
-                <h1>Downloader Pro</h1>
-                <p>Converta vídeos ou playlists do YouTube para MP3.</p>
+    <!-- Container Principal (Design Claro) -->
+    <div class="w-full max-w-2xl bg-white rounded-3xl shadow-xl overflow-hidden border border-gray-200/50">
+
+        <!-- ============================================= -->
+        <!-- ETAPA 1: INSERIR LINKS                        -->
+        <!-- ============================================= -->
+        <div id="step-1-insert" class="flex flex-col p-6 sm:p-10">
+            <div class="header text-center mb-6">
+                <h1 class="text-3xl sm:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-500 to-blue-500 mb-2">Downloader Pro</h1>
+                <p class="text-base sm:text-lg text-gray-600">Converta vídeos ou playlists do YouTube para MP3.</p>
             </div>
     
             <div class="url-form">
-                <textarea id="videoUrls" rows="5" placeholder="Cole um ou mais links do YouTube aqui (um por linha)..."></textarea>
-                <button id="convertBtn">
-                    <svg viewBox="0 0 24 24" width="16" height="16" style="vertical-align: middle; margin-right: 8px;" fill="currentColor"><use href="#icon-download"></use></svg>
-                    <span>Converter</span>
+                <textarea id="videoUrls" rows="6" placeholder="Cole um ou mais links do YouTube aqui (um por linha)..." class="w-full p-4 bg-gray-100 border border-gray-200 rounded-xl text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 resize-none shadow-inner"></textarea>
+                
+                <button id="convertBtn" class="w-full mt-4 p-4 bg-gradient-to-r from-cyan-500 to-blue-500 text-white rounded-xl text-lg font-semibold shadow-lg hover:from-cyan-600 hover:to-blue-600 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 transition-all duration-200 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed">
+                    <div class="flex items-center justify-center">
+                        <svg class="w-5 h-5 mr-2" fill="currentColor"><use href="#icon-download"></use></svg>
+                        <span>Converter</span>
+                    </div>
                 </button>
             </div>
+        </div>
 
-            <div class="process-container" id="processContainer">
-                <h3>Status do Processo</h3>
-
-                <div class="progress-label" id="currentFileText">Aguardando...</div>
-                <div class="progress-bar" id="currentFileProgressBar"> <div class="progress-fill" id="currentFileProgressFill"></div>
+        <!-- ============================================= -->
+        <!-- ETAPA 2: PROCESSANDO...                       -->
+        <!-- ============================================= -->
+        <div id="step-2-process" class="hidden flex-col p-6 sm:p-10">
+            <div class="flex items-center justify-center text-center mb-6">
+                <svg class="w-8 h-8 mr-3 text-cyan-500 animate-spin"><use href="#icon-spinner"></use></svg>
+                <h2 class="text-2xl sm:text-3xl font-bold text-gray-800">Processando...</h2>
+            </div>
+            
+            <div class="space-y-5">
+                <!-- Progresso do Arquivo Atual -->
+                <div>
+                    <label for="currentFileProgressBar" id="currentFileText" class="block text-sm font-medium text-gray-600 mb-1.5">Aguardando...</label>
+                    <div id="currentFileProgressBar" class="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
+                        <div id="currentFileProgressFill" class="h-2.5 rounded-full bg-gradient-to-r from-cyan-400 to-blue-500 transition-all duration-300" style="width: 0%"></div>
+                    </div>
                 </div>
 
-                <div class="progress-label" id="overallProgressText">Progresso Total</div>
-                <div class="progress-bar">
-                    <div class="progress-fill" id="overallProgressFill"></div>
+                <!-- Progresso Geral -->
+                <div>
+                    <label for="overallProgressBar" id="overallProgressText" class="block text-sm font-medium text-gray-600 mb-1.5">Progresso Total</label>
+                    <div id="overallProgressBar" class="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
+                        <div id="overallProgressFill" class="h-2.5 rounded-full bg-green-500 transition-all duration-300" style="width: 0%"></div>
+                    </div>
                 </div>
+            </div>
 
-                <div class="messages" id="messages"></div>
+            <!-- Log de Mensagens -->
+            <div class="mt-6">
+                <h3 class="text-lg font-semibold text-gray-700 mb-2">Logs do Processo</h3>
+                <div id="messages" class="w-full h-32 sm:h-40 p-3 bg-gray-100 border border-gray-200 rounded-lg text-sm text-gray-600 overflow-y-auto custom-scrollbar">
+                    <!-- Mensagens serão injetadas aqui -->
+                </div>
             </div>
         </div>
 
-        <div class="main-content">
-            <div classs="downloads-section">
-                <h3>Arquivos Prontos (Este Job)</h3>
-                <div id="filesList">
-                    <p id="noFilesMessage">Nenhum arquivo gerado neste job ainda.</p>
+        <!-- ============================================= -->
+        <!-- ETAPA 3: FINALIZADO (DOWNLOADS)               -->
+        <!-- ============================================= -->
+        <div id="step-3-finished" class="hidden flex-col p-6 sm:p-10">
+            <div class="text-center mb-6">
+                <h2 class="text-2xl sm:text-3xl font-bold text-green-600">🎉 Processo Concluído!</h2>
+                <p class="text-base text-gray-600 mt-1">Seus arquivos estão prontos para download.</p>
+            </div>
+
+            <!-- Lista de Arquivos -->
+            <div id="filesListContainer" class="w-full max-h-80 overflow-y-auto custom-scrollbar pr-2">
+                <div id="filesList" class="space-y-2">
+                    <!-- Nenhum arquivo (mensagem padrão) -->
+                    <p id="noFilesMessage" class="text-gray-500 text-center py-4">Nenhum arquivo foi gerado.</p>
+                    
+                    <!-- Itens de arquivo serão injetados aqui -->
                 </div>
             </div>
+
+            <!-- Botão de Reiniciar -->
+            <button id="newDownloadBtn" class="w-full mt-6 p-3 bg-gray-200 text-gray-700 rounded-xl font-semibold hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 transition-all duration-200 ease-in-out">
+                Baixar mais Mp3?
+            </button>
         </div>
-    </div>
+
+    </div> <!-- Fim .container -->
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
-        const socket = io();
-
         // --- Elementos do DOM ---
-        const processContainer = document.getElementById('processContainer');
-        const currentFileProgressBar = document.getElementById('currentFileProgressBar'); // Pai da barra
+        const steps = {
+            insert: document.getElementById('step-1-insert'),
+            process: document.getElementById('step-2-process'),
+            finished: document.getElementById('step-3-finished')
+        };
+        
+        const currentFileProgressBar = document.getElementById('currentFileProgressBar');
         const currentFileProgressFill = document.getElementById('currentFileProgressFill');
         const currentFileText = document.getElementById('currentFileText');
+        
         const overallProgressFill = document.getElementById('overallProgressFill');
         const overallProgressText = document.getElementById('overallProgressText');
+        
         const messagesDiv = document.getElementById('messages');
+        
         const convertBtn = document.getElementById('convertBtn');
         const convertBtnText = convertBtn.querySelector('span');
         const videoUrlsInput = document.getElementById('videoUrls');
+        
         const filesListDiv = document.getElementById('filesList');
         const noFilesMessage = document.getElementById('noFilesMessage');
+        const newDownloadBtn = document.getElementById('newDownloadBtn');
 
         // --- Variáveis de Estado ---
         let totalJobCount = 1;
+        const socket = io();
 
-        // --- Eventos do Socket ---
+        // --- Funções de Navegação (mesma lógica) ---
+        function showStep(stepName) {
+            Object.values(steps).forEach(step => {
+                step.style.display = 'none';
+            });
+            
+            if (steps[stepName]) {
+                steps[stepName].style.display = 'flex';
+            }
+        }
+
+        // --- Eventos do Socket (mesma lógica, apenas classes CSS mudam) ---
         socket.on('process-started', (data) => {
-            showProcess();
+            showStep('process');
             addMessage(data.message);
             disableForm();
             totalJobCount = 1;
@@ -330,23 +214,26 @@
         });
 
         socket.on('download-progress', (data) => {
-            // *** MUDANÇA ***
-            currentFileProgressBar.classList.remove('converting'); // Garante a cor de download
+            currentFileProgressBar.classList.remove('converting-pulse');
+            // Cor de Download (Ciano/Azul)
+            currentFileProgressFill.className = "h-2.5 rounded-full bg-gradient-to-r from-cyan-400 to-blue-500 transition-all duration-300"; 
             currentFileProgressFill.style.width = data.progress + '%';
             currentFileText.textContent = data.message; 
             updateLastMessage(data.message);
         });
         
         socket.on('conversion-started', (data) => {
-            // *** MUDANÇA (A CORREÇÃO PRINCIPAL) ***
-            currentFileText.textContent = data.message; // 1. Atualiza o rótulo principal
-            currentFileProgressBar.classList.add('converting'); // 2. Ativa a animação de pulso
-            addMessage(data.message); // 3. Adiciona ao log
+            currentFileText.textContent = data.message;
+            currentFileProgressBar.classList.add('converting-pulse');
+            // Cor de Conversão (Laranja - para destacar)
+            currentFileProgressFill.className = "h-2.5 rounded-full bg-orange-500 transition-all duration-300"; 
+            addMessage(data.message);
         });
 
         socket.on('conversion-complete', (data) => {
-            // *** MUDANÇA ***
-            currentFileProgressBar.classList.remove('converting'); // Remove a animação
+            currentFileProgressBar.classList.remove('converting-pulse');
+            // Reseta cor para a de download
+            currentFileProgressFill.className = "h-2.5 rounded-full bg-gradient-to-r from-cyan-400 to-blue-500 transition-all duration-300"; 
             addMessage(data.message);
             
             const overallPct = (data.current / data.total) * 100;
@@ -370,38 +257,45 @@
             addMessage(data.message);
             enableForm();
             resetProgress();
+            showStep('finished');
         });
 
         socket.on('process-error', (data) => {
             addMessage('❌ Erro: ' + data.error, true);
-            currentFileProgressBar.classList.remove('converting'); // Para animação em caso de erro
+            currentFileProgressBar.classList.remove('converting-pulse');
             enableForm();
+            setTimeout(() => {
+                showStep('insert');
+            }, 3000);
         });
 
-        // --- Funções Auxiliares ---
-        function showProcess() {
-            processContainer.style.display = 'block';
+        // --- Funções Auxiliares (com classes atualizadas) ---
+        
+        function resetForNewDownload() {
+            videoUrlsInput.value = '';
+            messagesDiv.innerHTML = '';
+            currentFileText.textContent = 'Aguardando...';
+            overallProgressText.textContent = 'Progresso Total';
             currentFileProgressFill.style.width = '0%';
             overallProgressFill.style.width = '0%';
-            messagesDiv.innerHTML = '';
-            currentFileText.textContent = 'Iniciando...';
-            overallProgressText.textContent = 'Progresso Total';
-            // *** MUDANÇA ***
-            currentFileProgressBar.classList.remove('converting'); // Reseta a animação
+            currentFileProgressBar.classList.remove('converting-pulse');
+            filesListDiv.innerHTML = ''; 
+            noFilesMessage.style.display = 'block';
+            showStep('insert');
         }
 
         function addMessage(message, isError = false) {
             const messageDiv = document.createElement('div');
-            messageDiv.className = isError ? 'message error' : 'message';
+            // Cores de texto atualizadas para o modo claro
+            messageDiv.className = isError ? 'text-red-600 font-medium' : 'text-gray-600';
             messageDiv.textContent = message;
-            messagesDiv.appendChild(messageDiv);
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            messagesDiv.prepend(messageDiv);
         }
 
         function updateLastMessage(message) {
-            const messages = messagesDiv.getElementsByClassName('message');
-            if (messages.length > 0) {
-                messages[messages.length - 1].textContent = message;
+            const firstMessage = messagesDiv.querySelector('div');
+            if (firstMessage && !firstMessage.classList.contains('text-red-600')) {
+                firstMessage.textContent = message;
             } else {
                 addMessage(message);
             }
@@ -420,9 +314,7 @@
         }
 
         function resetProgress() {
-            setTimeout(() => {
-                currentFileProgressFill.style.width = '0%';
-            }, 2000);
+            // Esta função é coberta por resetForNewDownload
         }
 
         function addFileToList(filename) {
@@ -430,35 +322,63 @@
 
             const isZip = filename.endsWith('.zip');
             const iconId = isZip ? '#icon-zip' : '#icon-music';
-            const btnClass = isZip ? 'download-btn zip-btn' : 'download-btn';
+            const btnText = isZip ? 'Baixar ZIP' : 'Download';
+            
+            // Cores dos botões de download atualizadas
+            const btnColor = isZip 
+                ? 'bg-blue-600 hover:bg-blue-700' 
+                : 'bg-green-600 hover:bg-green-700';
+            
+            // Cores dos ícones atualizadas
+            const iconColor = isZip ? 'text-blue-500' : 'text-cyan-500';
 
             const fileItem = document.createElement('div');
-            fileItem.className = 'file-item';
+            // Estilo do item de arquivo atualizado
+            fileItem.className = 'flex justify-between items-center p-3 bg-white border border-gray-200 rounded-lg animate-fade-in';
             fileItem.innerHTML = `
-                <div class="file-info">
-                    <svg class="file-icon" width="24" height="24"><use href="${iconId}"></use></svg>
-                    <span>${filename}</span>
+                <div class="flex items-center min-w-0">
+                    <svg class="w-5 h-5 ${iconColor} flex-shrink-0" fill="currentColor">
+                        <use href="${iconId}"></use>
+                    </svg>
+                    <span class="ml-3 text-sm font-medium text-gray-700 truncate" title="${filename}">${filename}</span>
                 </div>
-                <a href="/api/download/${encodeURIComponent(filename)}" class="${btnClass}" target="_blank">Download</a>
+                <a href="/api/download/${encodeURIComponent(filename)}" 
+                   class="ml-4 px-3 py-1.5 ${btnColor} text-white text-sm font-medium rounded-md transition-colors flex-shrink-0" 
+                   target="_blank">
+                    ${btnText}
+                </a>
             `;
             filesListDiv.prepend(fileItem);
         }
 
-
-        // --- Event Listeners ---
+        // --- Event Listeners (com feedback de validação light) ---
         convertBtn.addEventListener('click', () => {
             const urls = videoUrlsInput.value.trim();
             if (!urls) {
-                alert('Por favor, cole pelo menos um link do YouTube');
+                videoUrlsInput.classList.add('ring-2', 'ring-red-500');
+                videoUrlsInput.placeholder = 'Por favor, cole pelo menos um link aqui!';
+                setTimeout(() => {
+                    videoUrlsInput.classList.remove('ring-2', 'ring-red-500');
+                    videoUrlsInput.placeholder = 'Cole um ou mais links do YouTube aqui (um por linha)...';
+                }, 2500);
                 return;
             }
 
             filesListDiv.innerHTML = '';
             noFilesMessage.style.display = 'block'; 
-            
+            showStep('process');
             socket.emit('download-video', { urls });
         });
+
+        newDownloadBtn.addEventListener('click', () => {
+            resetForNewDownload();
+        });
+
+        // --- Inicialização ---
+        showStep('insert');
 
     </script>
 </body>
 </html>
+
+
