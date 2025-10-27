@@ -28,9 +28,13 @@ const ENABLE_API = true;
 const downloadsDir = path.join(__dirname, 'downloads');
 const publicDir = path.join(__dirname, 'public');
 const tempDir = path.join(__dirname, 'temp');
+// [NOVO] Subdiretórios de download
+const mp3Dir = path.join(downloadsDir, 'mp3');
+const mp4Dir = path.join(downloadsDir, 'mp4');
+
 
 // Criar diretórios se não existirem
-[downloadsDir, publicDir, tempDir].forEach(dir => {
+[downloadsDir, publicDir, tempDir, mp3Dir, mp4Dir].forEach(dir => {
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
   }
@@ -43,14 +47,15 @@ app.use(express.static(publicDir));
 app.use('/downloads', express.static(downloadsDir));
 
 // --- Rotas da API (Download de Arquivo) ---
-// (Esta é a sua versão estável, mantida)
-app.get('/api/download/:filename', (req, res) => {
-  const filename = req.params.filename;
+// [MODIFICADO] Rota de download para aceitar subpastas (ex: /mp3/arquivo.mp3)
+app.get('/api/download/:filename(*)', (req, res) => {
+  // :filename(*) captura tudo, incluindo barras /
+  const filename = req.params.filename; 
   const filePath = path.join(downloadsDir, filename);
   
   if (fs.existsSync(filePath)) {
     // Configurar headers para download
-    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(filename)}"`); // Melhorado para nomes com caracteres especiais
+    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(path.basename(filename))}"`); // Usa path.basename para o nome do arquivo
     res.setHeader('Content-Type', 'application/octet-stream');
     
     const fileStream = fs.createReadStream(filePath);
@@ -92,7 +97,8 @@ if (ENABLE_API) {
     try {
       // Chama a nova função "headless"
       const { filename, title } = await downloadYouTubeMP3_API(url);
-      const downloadUrl = `${req.protocol}://${req.get('host')}/api/download/${filename}`;
+      // [MODIFICADO] Garante que a URL é codificada corretamente
+      const downloadUrl = `${req.protocol}://${req.get('host')}/api/download/${encodeURIComponent(filename)}`;
       res.status(200).json({
         success: true,
         title: title,
@@ -114,7 +120,8 @@ if (ENABLE_API) {
     try {
       // Chama a nova função "headless"
       const { filename, title } = await downloadTikTokMP4_API(url);
-      const downloadUrl = `${req.protocol}://${req.get('host')}/api/download/${filename}`;
+      // [MODIFICADO] Garante que a URL é codificada corretamente
+      const downloadUrl = `${req.protocol}://${req.get('host')}/api/download/${encodeURIComponent(filename)}`;
       res.status(200).json({
         success: true,
         title: title,
@@ -233,12 +240,14 @@ function startDownloadProcess(socket, urls) {
     }
     if (output.includes('Deleting original file') && lastConversionPath) {
       const finalFilename = path.basename(lastConversionPath);
-      const finalDestPath = path.join(downloadsDir, finalFilename);
+      // [MODIFICADO] Salva na pasta 'mp3'
+      const finalDestPath = path.join(mp3Dir, finalFilename);
       try {
         fs.renameSync(lastConversionPath, finalDestPath);
         console.log(`[MP3] Arquivo movido para: ${finalDestPath}`);
         generatedFiles.push(finalDestPath);
-        socket.emit('conversion-complete', { processId, message: `✅ [MP3] Convertido: ${finalFilename}`, filename: finalFilename, current: currentVideoIndex, total: totalVideos });
+        // [MODIFICADO] Envia o caminho relativo 'mp3/filename.mp3'
+        socket.emit('conversion-complete', { processId, message: `✅ [MP3] Convertido: ${finalFilename}`, filename: `mp3/${finalFilename}`, current: currentVideoIndex, total: totalVideos });
       } catch (moveErr) {
         console.error('[MP3] Erro ao mover arquivo:', moveErr);
         hasError = true; 
@@ -337,12 +346,14 @@ function startTikTokDownloadProcess(socket, urls) {
     else if (output.includes('[download] 100%') && currentFileDestination) { if (!/\.f\d+\./.test(currentFileDestination)) { finalFileReadyPath = currentFileDestination; } }
     if (finalFileReadyPath) {
       const finalFilename = path.basename(finalFileReadyPath);
-      const finalDestPath = path.join(downloadsDir, finalFilename);
+      // [MODIFICADO] Salva na pasta 'mp4'
+      const finalDestPath = path.join(mp4Dir, finalFilename);
       try {
         fs.renameSync(finalFileReadyPath, finalDestPath);
         console.log(`[MP4] Arquivo movido para: ${finalDestPath}`);
         generatedFiles.push(finalDestPath);
-        socket.emit('tiktok-file-complete', { processId, message: `✅ [MP4] Baixado: ${finalFilename}`, filename: finalFilename, current: currentVideoIndex, total: totalVideos });
+        // [MODIFICADO] Envia o caminho relativo 'mp4/filename.mp4'
+        socket.emit('tiktok-file-complete', { processId, message: `✅ [MP4] Baixado: ${finalFilename}`, filename: `mp4/${finalFilename}`, current: currentVideoIndex, total: totalVideos });
       } catch (moveErr) {
         console.error('[MP4] Erro ao mover arquivo:', moveErr);
         hasError = true; 
@@ -408,10 +419,12 @@ function downloadYouTubeMP3_API(url) {
       }
       if (output.includes('Deleting original file') && lastConversionPath) {
         const filename = path.basename(lastConversionPath);
-        const finalDestPath = path.join(downloadsDir, filename);
+        // [MODIFICADO] Salva na pasta 'mp3'
+        const finalDestPath = path.join(mp3Dir, filename);
         try {
           fs.renameSync(lastConversionPath, finalDestPath);
-          finalFilename = filename;
+          // [MODIFICADO] Armazena o caminho relativo 'mp3/filename.mp3'
+          finalFilename = `mp3/${filename}`;
         } catch (moveErr) {
           console.error('[API MP3] Erro ao mover arquivo:', moveErr);
           hasError = true;
@@ -492,10 +505,12 @@ function downloadTikTokMP4_API(url) {
       
       if (finalFileReadyPath) {
         const filename = path.basename(finalFileReadyPath);
-        const finalDestPath = path.join(downloadsDir, filename);
+        // [MODIFICADO] Salva na pasta 'mp4'
+        const finalDestPath = path.join(mp4Dir, filename);
         try {
           fs.renameSync(finalFileReadyPath, finalDestPath);
-          finalFilename = filename;
+          // [MODIFICADO] Armazena o caminho relativo 'mp4/filename.mp4'
+          finalFilename = `mp4/${filename}`;
         } catch (moveErr) {
           console.error('[API MP4] Erro ao mover arquivo:', moveErr);
           hasError = true;
@@ -544,7 +559,7 @@ async function handleJobCompletion(socket, processId, jobDir, generatedFiles, ty
   if (totalFiles > 10) {
     socket.emit('zip-started', { processId, message: `Compressando ${totalFiles} arquivos... Isso pode demorar.` });
     const zipName = `${processId}-Arquivos.zip`;
-    const zipPath = path.join(downloadsDir, zipName);
+    const zipPath = path.join(downloadsDir, zipName); // Salva o ZIP na pasta 'downloads' raiz
     try {
       await zipGeneratedFiles(generatedFiles, zipPath);
       socket.emit('zip-complete', { processId, filename: zipName, message: `✅ Lote grande! Arquivo ZIP criado: ${zipName}`});
@@ -553,6 +568,9 @@ async function handleJobCompletion(socket, processId, jobDir, generatedFiles, ty
           if (err) console.error(`Erro ao apagar arquivo pós-zip: ${filePath}`, err);
         });
       });
+      // [FIX] Adicionado para disparar a tela de conclusão
+      socket.emit('process-complete', { processId, message: `🎉 Processo concluído com sucesso! ${totalFiles} arquivo(s) compactado(s).` });
+
     } catch (zipError) {
       console.error(`[${type}] Erro ao criar ZIP:`, zipError);
       socket.emit('process-error', { processId, error: 'Falha ao criar arquivo ZIP.' });
@@ -576,6 +594,7 @@ function zipGeneratedFiles(filePaths, outPath) {
       .on('error', err => reject(err))
       .pipe(stream);
     filePaths.forEach(filePath => {
+      // Adiciona o arquivo ao ZIP apenas com seu nome base (ex: 'musica.mp3')
       archive.file(filePath, { name: path.basename(filePath) });
     });
     stream.on('close', () => resolve());

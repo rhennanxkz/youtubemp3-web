@@ -84,6 +84,7 @@ socket.on('conversion-complete', (data) => {
     currentFileProgressFill.style.width = '0%';
     currentFileText.textContent = 'Convertido. Aguardando próximo...';
 
+    // data.filename agora é 'mp3/arquivo.mp3'
     addFileToList(data.filename, 'mp3'); // Tipo 'mp3'
 });
 
@@ -91,6 +92,7 @@ socket.on('zip-started', (data) => addMessage(data.message));
 
 socket.on('zip-complete', (data) => {
     addMessage(data.message);
+    // data.filename é 'arquivo.zip'
     addFileToList(data.filename, 'zip'); // Tipo 'zip'
 });
 
@@ -168,8 +170,13 @@ function enableForms() {
 }
 
 // Função para adicionar arquivos à lista
-function addFileToList(filename, type = 'mp3') {
+function addFileToList(fullPath, type = 'mp3') {
     noFilesMessage.style.display = 'none'; 
+
+    // [MODIFICADO] Extrai apenas o nome do arquivo para exibição
+    // ex: 'mp3/musica.mp3' vira 'musica.mp3'
+    // ex: 'meu-zip.zip' vira 'meu-zip.zip'
+    const displayName = fullPath.split('/').pop();
 
     let iconId, btnText, btnColor, iconColor;
 
@@ -182,7 +189,8 @@ function addFileToList(filename, type = 'mp3') {
             break;
         case 'zip':
             iconId = '#icon-zip';
-            btnText = 'Baixar ZIP';
+            // [MODIFICADO] Altera o texto do botão ZIP
+            btnText = 'Baixar Tudo (ZIP)';
             btnColor = 'bg-blue-600 hover:bg-blue-700';
             iconColor = 'text-blue-500';
             break;
@@ -202,9 +210,10 @@ function addFileToList(filename, type = 'mp3') {
             <svg class="w-5 h-5 ${iconColor} flex-shrink-0" fill="currentColor">
                 <use href="${iconId}"></use>
             </svg>
-            <span class="ml-3 text-sm font-medium text-gray-700 truncate" title="${filename}">${filename}</span>
+            <span class="ml-3 text-sm font-medium text-gray-700 truncate" title="${displayName}">${displayName}</span>
         </div>
-        <a href="/api/download/${encodeURIComponent(filename)}" 
+        
+        <a href="/api/download/${encodeURIComponent(fullPath)}" 
            class="ml-4 px-3 py-1.5 ${btnColor} text-white text-sm font-medium rounded-md transition-colors flex-shrink-0" 
            target="_blank">
             ${btnText}
