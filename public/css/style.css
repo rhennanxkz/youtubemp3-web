@@ -1,0 +1,35 @@
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+.converting-pulse {
+    animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.custom-scrollbar::-webkit-scrollbar { width: 6px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.05); border-radius: 3px; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: #22d3ee; border-radius: 3px; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #06b6d4; }
+
+/* Estilos para Abas */
+.tab-btn.active {
+    border-color: #06b6d4; /* cyan-600 */
+    color: #0891b2; /* cyan-700 */
+    background-color: #f8fafc; /* slate-50 */
+}
+.tab-btn {
+    border-color: transparent;
+}
+
+/* Animações */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in {
+    animation: fadeIn 0.3s ease-out;
+}

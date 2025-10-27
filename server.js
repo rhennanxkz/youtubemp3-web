@@ -36,14 +36,10 @@ app.use(express.json());
 app.use(express.static(publicDir));
 // Servir 'downloads' como estático permite o link de download <a> funcionar
 app.use('/downloads', express.static(downloadsDir)); 
-// A rota estática de /api/download foi movida para DEPOIS da rota da API
 
 // --- Rotas da API ---
 
-// ===================================================================
-// INÍCIO DA CORREÇÃO
-// Esta rota específica DEVE vir ANTES da rota estática app.use('/api/download', ...)
-// para garantir que res.download() seja chamado.
+// Rota específica para download DEVE vir ANTES da rota estática
 app.get('/api/download/:filename', (req, res) => {
   const filename = req.params.filename;
   const filePath = path.join(downloadsDir, filename);
@@ -61,16 +57,30 @@ app.get('/api/download/:filename', (req, res) => {
     res.status(404).json({ error: 'Arquivo não encontrado' });
   }
 });
-// FIM DA CORREÇÃO
-// ===================================================================
 
 // Rota de fallback para /api/download (agora vem DEPOIS da específica)
 app.use('/api/download', express.static(downloadsDir)); 
 
+// --- Novas Rotas de Páginas ---
 app.get('/', (req, res) => {
-  // O express.static já cuida disso, mas mantemos por clareza
   res.sendFile(path.join(publicDir, 'index.html'));
 });
+
+app.get('/youtube-mp3', (req, res) => {
+  res.sendFile(path.join(publicDir, 'youtube-mp3.html'));
+});
+
+app.get('/tiktok-download', (req, res) => {
+  res.sendFile(path.join(publicDir, 'tiktok-download.html'));
+});
+
+app.get('/about', (req, res) => {
+  res.sendFile(path.join(publicDir, 'about.html'));
+});
+
+// Servir arquivos estáticos para CSS e JS
+app.use('/css', express.static(path.join(publicDir, 'css')));
+app.use('/js', express.static(path.join(publicDir, 'js')));
 
 // --- Lógica do Socket.io ---
 io.on('connection', (socket) => {
@@ -87,7 +97,7 @@ io.on('connection', (socket) => {
     startDownloadProcess(socket, urls);
   });
 
-  // NOVO Listener para TikTok MP4
+  // Listener para TikTok MP4
   socket.on('download-tiktok', (data) => {
     const urls = data.urls.split('\n').filter(Boolean);
     if (urls.length === 0) {
@@ -243,7 +253,7 @@ function startDownloadProcess(socket, urls) {
 }
 
 /**
- * NOVO - Inicia o processo de download do TikTok (MP4)
+ * Inicia o processo de download do TikTok (MP4)
  */
 function startTikTokDownloadProcess(socket, urls) {
   const processId = `mp4-${Date.now()}`;
@@ -269,21 +279,18 @@ function startTikTokDownloadProcess(socket, urls) {
     '-f', 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best', // Formato MP4
     '--output', `${jobDir}/%(title).100s.%(ext)s`, // Salva no temp dir
     '--newline',
-    // --- ATUALIZADO ---
     // Manter User-Agent e Referer
     '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36',
     '--referer', 'https://www.tiktok.com/',
-    // ...urls serão adicionados depois dos cookies, se existirem
   ];
 
-  // --- NOVO: Adiciona cookies se o arquivo existir ---
+  // Adiciona cookies se o arquivo existir
   if (fs.existsSync(cookieFilePath)) {
     console.log(`[MP4] Usando arquivo de cookies: ${cookieFilePath}`);
     args.push('--cookies', cookieFilePath);
   } else {
     console.warn(`[MP4] Arquivo de cookies (www.tiktok.com_cookies.txt) não encontrado. Tentando sem cookies.`);
   }
-  // --- FIM ---
 
   // Adiciona as URLs ao final dos argumentos
   args.push(...urls);
@@ -404,9 +411,8 @@ function startTikTokDownloadProcess(socket, urls) {
   });
 }
 
-
 /**
- * ATUALIZADO - Lida com a finalização do lote (MP3 ou MP4)
+ * Lida com a finalização do lote (MP3 ou MP4)
  * Zips se > 10 arquivos, caso contrário, apenas finaliza.
  */
 async function handleJobCompletion(socket, processId, jobDir, generatedFiles, type = 'MP3') {
@@ -462,7 +468,6 @@ async function handleJobCompletion(socket, processId, jobDir, generatedFiles, ty
     else console.log(`Temp dir ${jobDir} limpo.`);
   });
 }
-
 
 /**
  * Função utilitária para criar ZIP a partir de uma lista de caminhos de arquivos
