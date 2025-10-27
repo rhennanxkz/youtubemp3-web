@@ -3,23 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YouTube para MP3 Pro</title>
+    <title>Downloader Pro</title>
     
-    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Google Fonts (Inter) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <style>
-        /* Estilização base com a fonte Inter */
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
 
-        /* Animação de pulso para conversão */
         @keyframes pulse {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.7; }
@@ -28,30 +24,33 @@
             animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
 
-        /* Scrollbar customizada (versão light) */
-        .custom-scrollbar::-webkit-scrollbar {
-            width: 6px;
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.05); border-radius: 3px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #22d3ee; border-radius: 3px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #06b6d4; }
+
+        /* Estilos para Abas */
+        .tab-btn.active {
+            border-color: #06b6d4; /* cyan-600 */
+            color: #0891b2; /* cyan-700 */
+            background-color: #f8fafc; /* slate-50 */
         }
-        .custom-scrollbar::-webkit-scrollbar-track {
-            background: rgba(0, 0, 0, 0.05);
-            border-radius: 3px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: #22d3ee; /* Cyan-400 */
-            border-radius: 3px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-            background: #06b6d4; /* Cyan-500 */
+        .tab-btn {
+            border-color: transparent;
         }
     </style>
 </head>
-<body class="bg-slate-100 text-gray-800 min-h-screen flex items-center justify-center p-4">
+<body class="bg-slate-100 text-gray-800 min-h-screen flex items-center justify-center p-4 pb-16">
 
-    <!-- Ícones SVG embutidos (mesmos ícones) -->
+    <!-- Definições de Ícones SVG -->
     <svg width="0" height="0" style="position:absolute">
         <defs>
             <symbol id="icon-music" viewBox="0 0 24 24">
                 <path fill="currentColor" d="M12 3v10.55c-.59-.34-1.27-.55-2-.55c-2.21 0-4 1.79-4 4s1.79 4 4 4s4-1.79 4-4V7h4V3h-6Z"/>
+            </symbol>
+            <!-- NOVO ÍCONE DE VÍDEO -->
+            <symbol id="icon-video" viewBox="0 0 24 24">
+                <path fill="currentColor" d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4Z"/>
             </symbol>
             <symbol id="icon-zip" viewBox="0 0 24 24">
                 <path fill="currentColor" d="M20 6h-8L10 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2m-2 6h-2v2h2v2h-2v2h-2v-2h2v-2h-2v-2h2v-2h-2V8h2v2h2Z"/>
@@ -68,41 +67,66 @@
         </defs>
     </svg>
 
-    <!-- Container Principal (Design Claro) -->
+    <!-- Card Principal -->
     <div class="w-full max-w-2xl bg-white rounded-3xl shadow-xl overflow-hidden border border-gray-200/50">
 
-        <!-- ============================================= -->
-        <!-- ETAPA 1: INSERIR LINKS                        -->
-        <!-- ============================================= -->
+        <!-- ETAPA 1: Inserção de Links (com Abas) -->
         <div id="step-1-insert" class="flex flex-col p-6 sm:p-10">
             <div class="header text-center mb-6">
-                <h1 class="text-3xl sm:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-500 to-blue-500 mb-2">Downloader Pro</h1>
-                <p class="text-base sm:text-lg text-gray-600">Converta vídeos ou playlists do YouTube para MP3.</p>
+                <h1 class="text-3xl sm:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-500 to-blue-500 mb-4">Downloader Pro</h1>
+            </div>
+
+            <!-- Navegação das Abas -->
+            <div class="flex border-b border-gray-200 mb-6">
+                <button id="tab-btn-youtube" class="tab-btn active flex-1 py-3 px-4 font-semibold text-gray-500 border-b-2 focus:outline-none transition-colors duration-200">
+                    YouTube MP3
+                </button>
+                <button id="tab-btn-tiktok" class="tab-btn flex-1 py-3 px-4 font-semibold text-gray-500 border-b-2 focus:outline-none transition-colors duration-200">
+                    TikTok Downloader
+                </button>
             </div>
     
-            <div class="url-form">
+            <!-- Conteúdo da Aba YouTube -->
+            <div id="youtube-tab-content" class="url-form">
+                <p class="text-base sm:text-lg text-gray-600 text-center mb-6">Converta vídeos ou playlists do YouTube para MP3.</p>
                 <textarea id="videoUrls" rows="6" placeholder="Cole um ou mais links do YouTube aqui (um por linha)..." class="w-full p-4 bg-gray-100 border border-gray-200 rounded-xl text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 resize-none shadow-inner"></textarea>
                 
                 <button id="convertBtn" class="w-full mt-4 p-4 bg-gradient-to-r from-cyan-500 to-blue-500 text-white rounded-xl text-lg font-semibold shadow-lg hover:from-cyan-600 hover:to-blue-600 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 transition-all duration-200 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed">
                     <div class="flex items-center justify-center">
                         <svg class="w-5 h-5 mr-2" fill="currentColor"><use href="#icon-download"></use></svg>
-                        <span>Converter</span>
+                        <span id="convertBtnText">Converter</span>
+                    </div>
+                </button>
+            </div>
+
+            <!-- Conteúdo da Aba TikTok (NOVO) -->
+            <div id="tiktok-tab-content" class="url-form hidden">
+                <p class="text-base sm:text-lg text-gray-600 text-center mb-6">Baixe vídeos do TikTok em formato MP4.</p>
+                <textarea id="tiktokUrls" rows="6" placeholder="Cole um ou mais links do TikTok aqui (um por linha)..." class="w-full p-4 bg-gray-100 border border-gray-200 rounded-xl text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none shadow-inner"></textarea>
+                
+                <button id="convertTiktokBtn" class="w-full mt-4 p-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl text-lg font-semibold shadow-lg hover:from-purple-600 hover:to-pink-600 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-all duration-200 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed">
+                    <div class="flex items-center justify-center">
+                        <svg class="w-5 h-5 mr-2" fill="currentColor"><use href="#icon-download"></use></svg>
+                        <span id="convertTiktokBtnText">Baixar Vídeos</span>
                     </div>
                 </button>
             </div>
         </div>
 
-        <!-- ============================================= -->
-        <!-- ETAPA 2: PROCESSANDO...                       -->
-        <!-- ============================================= -->
-        <div id="step-2-process" class="hidden flex-col p-6 sm:p-10">
-            <div class="flex items-center justify-center text-center mb-6">
+        <!-- ETAPA 2: Processamento (Compartilhada) -->
+        <div id="step-2-process-list" class="hidden flex-col p-6 sm:p-10">
+            
+            <div id="processing-header" class="flex items-center justify-center text-center mb-6">
                 <svg class="w-8 h-8 mr-3 text-cyan-500 animate-spin"><use href="#icon-spinner"></use></svg>
                 <h2 class="text-2xl sm:text-3xl font-bold text-gray-800">Processando...</h2>
             </div>
             
-            <div class="space-y-5">
-                <!-- Progresso do Arquivo Atual -->
+            <div id="finished-header" class="hidden text-center mb-6">
+                <h2 class="text-2xl sm:text-3xl font-bold text-green-600">🎉 Processo Concluído!</h2>
+                <p class="text-base text-gray-600 mt-1">Seus arquivos estão prontos para download.</p>
+            </div>
+            
+            <div id="progress-bars" class="space-y-5 mb-6">
                 <div>
                     <label for="currentFileProgressBar" id="currentFileText" class="block text-sm font-medium text-gray-600 mb-1.5">Aguardando...</label>
                     <div id="currentFileProgressBar" class="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
@@ -110,7 +134,6 @@
                     </div>
                 </div>
 
-                <!-- Progresso Geral -->
                 <div>
                     <label for="overallProgressBar" id="overallProgressText" class="block text-sm font-medium text-gray-600 mb-1.5">Progresso Total</label>
                     <div id="overallProgressBar" class="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
@@ -119,73 +142,75 @@
                 </div>
             </div>
 
-            <!-- Log de Mensagens -->
-            <div class="mt-6">
+            <h3 class="text-lg font-semibold text-gray-700 mb-2">Arquivos Prontos</h3>
+            <div id="filesListContainer" class="w-full max-h-80 overflow-y-auto custom-scrollbar pr-2 border border-gray-200 rounded-lg p-2 bg-gray-50 mb-6">
+                <div id="filesList" class="space-y-2">
+                    <p id="noFilesMessage" class="text-gray-500 text-center py-4">Nenhum arquivo pronto ainda...</p>
+                </div>
+            </div>
+
+            <div class="mt-0">
                 <h3 class="text-lg font-semibold text-gray-700 mb-2">Logs do Processo</h3>
                 <div id="messages" class="w-full h-32 sm:h-40 p-3 bg-gray-100 border border-gray-200 rounded-lg text-sm text-gray-600 overflow-y-auto custom-scrollbar">
-                    <!-- Mensagens serão injetadas aqui -->
-                </div>
-            </div>
-        </div>
-
-        <!-- ============================================= -->
-        <!-- ETAPA 3: FINALIZADO (DOWNLOADS)               -->
-        <!-- ============================================= -->
-        <div id="step-3-finished" class="hidden flex-col p-6 sm:p-10">
-            <div class="text-center mb-6">
-                <h2 class="text-2xl sm:text-3xl font-bold text-green-600">🎉 Processo Concluído!</h2>
-                <p class="text-base text-gray-600 mt-1">Seus arquivos estão prontos para download.</p>
+                    </div>
             </div>
 
-            <!-- Lista de Arquivos -->
-            <div id="filesListContainer" class="w-full max-h-80 overflow-y-auto custom-scrollbar pr-2">
-                <div id="filesList" class="space-y-2">
-                    <!-- Nenhum arquivo (mensagem padrão) -->
-                    <p id="noFilesMessage" class="text-gray-500 text-center py-4">Nenhum arquivo foi gerado.</p>
-                    
-                    <!-- Itens de arquivo serão injetados aqui -->
-                </div>
-            </div>
-
-            <!-- Botão de Reiniciar -->
-            <button id="newDownloadBtn" class="w-full mt-6 p-3 bg-gray-200 text-gray-700 rounded-xl font-semibold hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 transition-all duration-200 ease-in-out">
-                Baixar mais Mp3?
+            <button id="newDownloadBtn" class="w-full mt-6 p-3 bg-gray-200 text-gray-700 rounded-xl font-semibold hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 transition-all duration-200 ease-in-out hidden">
+                Fazer novo Download
             </button>
         </div>
 
-    </div> <!-- Fim .container -->
+    </div> 
+    
+    <footer class="fixed bottom-0 left-0 w-full bg-slate-200 text-slate-600 text-center text-xs sm:text-sm p-3 shadow-inner border-t border-slate-300">
+        Desenvolvido Por <strong>Rhennan Sullivan</strong> | Whatsapp: +55 (99) 98503-1440 | Copyright 2025
+    </footer>
+
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
-        // --- Elementos do DOM ---
+        // --- Elementos do DOM (Atualizados) ---
         const steps = {
             insert: document.getElementById('step-1-insert'),
-            process: document.getElementById('step-2-process'),
-            finished: document.getElementById('step-3-finished')
+            process: document.getElementById('step-2-process-list')
         };
+
+        // Abas
+        const tabBtnYoutube = document.getElementById('tab-btn-youtube');
+        const tabBtnTiktok = document.getElementById('tab-btn-tiktok');
+        const youtubeTabContent = document.getElementById('youtube-tab-content');
+        const tiktokTabContent = document.getElementById('tiktok-tab-content');
         
-        const currentFileProgressBar = document.getElementById('currentFileProgressBar');
+        // Elementos do Passo 2 (Processamento)
+        const processingHeader = document.getElementById('processing-header');
+        const finishedHeader = document.getElementById('finished-header');
+        const progressBars = document.getElementById('progress-bars');
+        
         const currentFileProgressFill = document.getElementById('currentFileProgressFill');
         const currentFileText = document.getElementById('currentFileText');
-        
         const overallProgressFill = document.getElementById('overallProgressFill');
         const overallProgressText = document.getElementById('overallProgressText');
-        
         const messagesDiv = document.getElementById('messages');
         
+        // Botões e Inputs
         const convertBtn = document.getElementById('convertBtn');
-        const convertBtnText = convertBtn.querySelector('span');
+        const convertBtnText = document.getElementById('convertBtnText');
         const videoUrlsInput = document.getElementById('videoUrls');
+        
+        const convertTiktokBtn = document.getElementById('convertTiktokBtn');
+        const convertTiktokBtnText = document.getElementById('convertTiktokBtnText');
+        const tiktokUrlsInput = document.getElementById('tiktokUrls');
         
         const filesListDiv = document.getElementById('filesList');
         const noFilesMessage = document.getElementById('noFilesMessage');
         const newDownloadBtn = document.getElementById('newDownloadBtn');
 
         // --- Variáveis de Estado ---
+        let currentActiveTab = 'youtube'; // 'youtube' ou 'tiktok'
         let totalJobCount = 1;
         const socket = io();
 
-        // --- Funções de Navegação (mesma lógica) ---
+        // --- Funções de Navegação ---
         function showStep(stepName) {
             Object.values(steps).forEach(step => {
                 step.style.display = 'none';
@@ -196,11 +221,26 @@
             }
         }
 
-        // --- Eventos do Socket (mesma lógica, apenas classes CSS mudam) ---
+        function setActiveTab(tabName) {
+            currentActiveTab = tabName;
+            if (tabName === 'youtube') {
+                tabBtnYoutube.classList.add('active');
+                tabBtnTiktok.classList.remove('active');
+                youtubeTabContent.style.display = 'block';
+                tiktokTabContent.style.display = 'none';
+            } else {
+                tabBtnYoutube.classList.remove('active');
+                tabBtnTiktok.classList.add('active');
+                youtubeTabContent.style.display = 'none';
+                tiktokTabContent.style.display = 'block';
+            }
+        }
+
+        // --- Eventos do Socket ---
         socket.on('process-started', (data) => {
             showStep('process');
             addMessage(data.message);
-            disableForm();
+            disableForms();
             totalJobCount = 1;
         });
 
@@ -214,8 +254,7 @@
         });
 
         socket.on('download-progress', (data) => {
-            currentFileProgressBar.classList.remove('converting-pulse');
-            // Cor de Download (Ciano/Azul)
+            currentFileProgressFill.classList.remove('converting-pulse');
             currentFileProgressFill.className = "h-2.5 rounded-full bg-gradient-to-r from-cyan-400 to-blue-500 transition-all duration-300"; 
             currentFileProgressFill.style.width = data.progress + '%';
             currentFileText.textContent = data.message; 
@@ -224,15 +263,14 @@
         
         socket.on('conversion-started', (data) => {
             currentFileText.textContent = data.message;
-            currentFileProgressBar.classList.add('converting-pulse');
-            // Cor de Conversão (Laranja - para destacar)
+            currentFileProgressFill.classList.add('converting-pulse');
             currentFileProgressFill.className = "h-2.5 rounded-full bg-orange-500 transition-all duration-300"; 
             addMessage(data.message);
         });
 
+        // Evento MP3
         socket.on('conversion-complete', (data) => {
-            currentFileProgressBar.classList.remove('converting-pulse');
-            // Reseta cor para a de download
+            currentFileProgressFill.classList.remove('converting-pulse');
             currentFileProgressFill.className = "h-2.5 rounded-full bg-gradient-to-r from-cyan-400 to-blue-500 transition-all duration-300"; 
             addMessage(data.message);
             
@@ -243,50 +281,83 @@
             currentFileProgressFill.style.width = '0%';
             currentFileText.textContent = 'Convertido. Aguardando próximo...';
 
-            addFileToList(data.filename);
+            addFileToList(data.filename, 'mp3'); // Tipo 'mp3'
+        });
+
+        // NOVO Evento MP4
+        socket.on('tiktok-file-complete', (data) => {
+            currentFileProgressFill.classList.remove('converting-pulse');
+            currentFileProgressFill.className = "h-2.5 rounded-full bg-gradient-to-r from-purple-400 to-pink-500 transition-all duration-300"; 
+            addMessage(data.message);
+            
+            const overallPct = (data.current / data.total) * 100;
+            overallProgressFill.style.width = overallPct + '%';
+            overallProgressText.textContent = `Progresso Total: ${data.current} / ${data.total}`;
+            
+            currentFileProgressFill.style.width = '0%';
+            currentFileText.textContent = 'Baixado. Aguardando próximo...';
+
+            addFileToList(data.filename, 'mp4'); // Tipo 'mp4'
         });
 
         socket.on('zip-started', (data) => addMessage(data.message));
         
         socket.on('zip-complete', (data) => {
             addMessage(data.message);
-            addFileToList(data.filename);
+            addFileToList(data.filename, 'zip'); // Tipo 'zip'
         });
 
         socket.on('process-complete', (data) => {
             addMessage(data.message);
-            enableForm();
-            resetProgress();
-            showStep('finished');
+            enableForms();
+            
+            processingHeader.style.display = 'none';
+            progressBars.style.display = 'none';
+            
+            finishedHeader.style.display = 'block';
+            newDownloadBtn.style.display = 'block';
         });
 
         socket.on('process-error', (data) => {
             addMessage('❌ Erro: ' + data.error, true);
-            currentFileProgressBar.classList.remove('converting-pulse');
-            enableForm();
+            currentFileProgressFill.classList.remove('converting-pulse');
+            enableForms();
             setTimeout(() => {
                 showStep('insert');
+                setActiveTab(currentActiveTab); // Volta para a aba que estava ativa
+                resetProcessScreen(); 
             }, 3000);
         });
 
-        // --- Funções Auxiliares (com classes atualizadas) ---
+        // --- Funções Auxiliares ---
         
-        function resetForNewDownload() {
-            videoUrlsInput.value = '';
-            messagesDiv.innerHTML = '';
+        function resetProcessScreen() {
+            finishedHeader.style.display = 'none';
+            newDownloadBtn.style.display = 'none';
+            processingHeader.style.display = 'flex';
+            progressBars.style.display = 'block';
+
             currentFileText.textContent = 'Aguardando...';
             overallProgressText.textContent = 'Progresso Total';
             currentFileProgressFill.style.width = '0%';
             overallProgressFill.style.width = '0%';
-            currentFileProgressBar.classList.remove('converting-pulse');
+            currentFileProgressFill.classList.remove('converting-pulse');
+
             filesListDiv.innerHTML = ''; 
             noFilesMessage.style.display = 'block';
+            messagesDiv.innerHTML = '';
+        }
+        
+        function resetForNewDownload() {
+            videoUrlsInput.value = '';
+            tiktokUrlsInput.value = '';
+            resetProcessScreen();
             showStep('insert');
+            setActiveTab(currentActiveTab); // Reexibe a aba correta
         }
 
         function addMessage(message, isError = false) {
             const messageDiv = document.createElement('div');
-            // Cores de texto atualizadas para o modo claro
             messageDiv.className = isError ? 'text-red-600 font-medium' : 'text-gray-600';
             messageDiv.textContent = message;
             messagesDiv.prepend(messageDiv);
@@ -301,39 +372,55 @@
             }
         }
 
-        function disableForm() {
+        function disableForms() {
             convertBtn.disabled = true;
             videoUrlsInput.disabled = true;
             convertBtnText.textContent = 'Processando...';
+
+            convertTiktokBtn.disabled = true;
+            tiktokUrlsInput.disabled = true;
+            convertTiktokBtnText.textContent = 'Processando...';
         }
 
-        function enableForm() {
+        function enableForms() {
             convertBtn.disabled = false;
             videoUrlsInput.disabled = false;
             convertBtnText.textContent = 'Converter';
+
+            convertTiktokBtn.disabled = false;
+            tiktokUrlsInput.disabled = false;
+            convertTiktokBtnText.textContent = 'Baixar Vídeos';
         }
 
-        function resetProgress() {
-            // Esta função é coberta por resetForNewDownload
-        }
-
-        function addFileToList(filename) {
+        // Função ATUALIZADA para lidar com tipos
+        function addFileToList(filename, type = 'mp3') {
             noFilesMessage.style.display = 'none'; 
 
-            const isZip = filename.endsWith('.zip');
-            const iconId = isZip ? '#icon-zip' : '#icon-music';
-            const btnText = isZip ? 'Baixar ZIP' : 'Download';
-            
-            // Cores dos botões de download atualizadas
-            const btnColor = isZip 
-                ? 'bg-blue-600 hover:bg-blue-700' 
-                : 'bg-green-600 hover:bg-green-700';
-            
-            // Cores dos ícones atualizadas
-            const iconColor = isZip ? 'text-blue-500' : 'text-cyan-500';
+            let iconId, btnText, btnColor, iconColor;
+
+            switch (type) {
+                case 'mp4':
+                    iconId = '#icon-video';
+                    btnText = 'Baixar MP4';
+                    btnColor = 'bg-purple-600 hover:bg-purple-700';
+                    iconColor = 'text-purple-500';
+                    break;
+                case 'zip':
+                    iconId = '#icon-zip';
+                    btnText = 'Baixar ZIP';
+                    btnColor = 'bg-blue-600 hover:bg-blue-700';
+                    iconColor = 'text-blue-500';
+                    break;
+                case 'mp3':
+                default:
+                    iconId = '#icon-music';
+                    btnText = 'Download';
+                    btnColor = 'bg-green-600 hover:bg-green-700';
+                    iconColor = 'text-cyan-500';
+                    break;
+            }
 
             const fileItem = document.createElement('div');
-            // Estilo do item de arquivo atualizado
             fileItem.className = 'flex justify-between items-center p-3 bg-white border border-gray-200 rounded-lg animate-fade-in';
             fileItem.innerHTML = `
                 <div class="flex items-center min-w-0">
@@ -351,7 +438,13 @@
             filesListDiv.prepend(fileItem);
         }
 
-        // --- Event Listeners (com feedback de validação light) ---
+        // --- Event Listeners ---
+
+        // Abas
+        tabBtnYoutube.addEventListener('click', () => setActiveTab('youtube'));
+        tabBtnTiktok.addEventListener('click', () => setActiveTab('tiktok'));
+
+        // Botão YouTube
         convertBtn.addEventListener('click', () => {
             const urls = videoUrlsInput.value.trim();
             if (!urls) {
@@ -364,10 +457,27 @@
                 return;
             }
 
-            filesListDiv.innerHTML = '';
-            noFilesMessage.style.display = 'block'; 
+            resetProcessScreen(); 
             showStep('process');
             socket.emit('download-video', { urls });
+        });
+
+        // Botão TikTok (NOVO)
+        convertTiktokBtn.addEventListener('click', () => {
+            const urls = tiktokUrlsInput.value.trim();
+            if (!urls) {
+                tiktokUrlsInput.classList.add('ring-2', 'ring-red-500');
+                tiktokUrlsInput.placeholder = 'Por favor, cole pelo menos um link aqui!';
+                setTimeout(() => {
+                    tiktokUrlsInput.classList.remove('ring-2', 'ring-red-500');
+                    tiktokUrlsInput.placeholder = 'Cole um ou mais links do TikTok aqui (um por linha)...';
+                }, 2500);
+                return;
+            }
+
+            resetProcessScreen(); 
+            showStep('process');
+            socket.emit('download-tiktok', { urls }); // Novo evento
         });
 
         newDownloadBtn.addEventListener('click', () => {
@@ -375,10 +485,10 @@
         });
 
         // --- Inicialização ---
-        showStep('insert');
+        setActiveTab('youtube'); // Define a aba inicial
+        showStep('insert'); // Mostra a tela de inserção
 
     </script>
 </body>
 </html>
-
 

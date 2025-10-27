@@ -34,10 +34,13 @@ const tempDir = path.join(__dirname, 'temp');
 app.use(cors());
 app.use(express.json());
 app.use(express.static(publicDir));
-app.use('/downloads', express.static(downloadsDir)); // Mantemos para o download do link
+// Servir 'downloads' como estático permite o link de download <a> funcionar
+app.use('/downloads', express.static(downloadsDir)); 
+app.use('/api/download', express.static(downloadsDir)); // Rota de fallback para o link
 
 // --- Rotas da API ---
 app.get('/', (req, res) => {
+  // O express.static já cuida disso, mas mantemos por clareza
   res.sendFile(path.join(publicDir, 'index.html'));
 });
 
@@ -47,8 +50,15 @@ app.get('/api/download/:filename', (req, res) => {
   const filePath = path.join(downloadsDir, filename);
   
   if (fs.existsSync(filePath)) {
-    res.download(filePath);
+    // res.download() força o download
+    res.download(filePath, (err) => {
+      if (err) {
+        console.error("Erro ao enviar arquivo:", err);
+        res.status(500).json({ error: 'Falha no download' });
+      }
+    });
   } else {
+    console.warn(`Tentativa de baixar arquivo não existente: ${filename}`);
     res.status(404).json({ error: 'Arquivo não encontrado' });
   }
 });
@@ -57,14 +67,26 @@ app.get('/api/download/:filename', (req, res) => {
 io.on('connection', (socket) => {
   console.log('Cliente conectado:', socket.id);
 
+  // Listener para YouTube MP3
   socket.on('download-video', (data) => {
     const urls = data.urls.split('\n').filter(Boolean); 
     if (urls.length === 0) {
-      return socket.emit('process-error', { error: 'Nenhum URL fornecido.' });
+      return socket.emit('process-error', { error: 'Nenhum URL fornecido (YouTube).' });
     }
     
-    console.log(`Iniciando download para ${urls.length} URLs/Playlists...`);
+    console.log(`[MP3] Iniciando download para ${urls.length} URLs...`);
     startDownloadProcess(socket, urls);
+  });
+
+  // NOVO Listener para TikTok MP4
+  socket.on('download-tiktok', (data) => {
+    const urls = data.urls.split('\n').filter(Boolean);
+    if (urls.length === 0) {
+      return socket.emit('process-error', { error: 'Nenhum URL fornecido (TikTok).' });
+    }
+
+    console.log(`[MP4] Iniciando download para ${urls.length} URLs...`);
+    startTikTokDownloadProcess(socket, urls);
   });
 
   socket.on('disconnect', () => {
@@ -73,10 +95,10 @@ io.on('connection', (socket) => {
 });
 
 /**
- * Inicia o processo de download do yt-dlp
+ * Inicia o processo de download do YouTube (MP3)
  */
 function startDownloadProcess(socket, urls) {
-  const processId = Date.now().toString();
+  const processId = `mp3-${Date.now()}`;
   const jobDir = path.join(tempDir, processId);
   fs.mkdirSync(jobDir, { recursive: true });
 
@@ -85,19 +107,20 @@ function startDownloadProcess(socket, urls) {
   let isPlaylist = false;
   let currentTitle = '';
   let hasError = false; 
-  let lastConversionPath = null; 
+  let lastConversionPath = null;
+  let generatedFiles = []; // Array para rastrear arquivos finalizados
 
   socket.emit('process-started', { 
     processId, 
-    message: `🔄 Iniciando... Processando ${urls.length} entrada(s).` 
+    message: `🔄 [MP3] Iniciando... Processando ${urls.length} entrada(s).` 
   });
 
   const args = [
-    '-x', 
+    '-x', // Extrair áudio
     '--audio-format', 'mp3', 
-    '--audio-quality', '0',
-    '--output', `${jobDir}/%(title).100s.%(ext)s`, 
-    '--newline',
+    '--audio-quality', '0', // Melhor qualidade
+    '--output', `${jobDir}/%(title).100s.%(ext)s`, // Salva no temp dir
+    '--newline', // Garante que a saída seja por linha
     ...urls
   ];
 
@@ -106,10 +129,8 @@ function startDownloadProcess(socket, urls) {
 
   ytdlp.stdout.on('data', (data) => {
     const output = data.toString().trim();
-    if (output) console.log('yt-dlp:', output);
+    if (output) console.log('[MP3 yt-dlp]:', output);
 
-    // *** A CORREÇÃO ESTÁ AQUI ***
-    // Mudamos o regex para aceitar "video" ou "item"
     const playlistMatch = output.match(/\[download\] Downloading (?:video|item) (\d+) of (\d+)/);
     
     if (playlistMatch) {
@@ -118,12 +139,11 @@ function startDownloadProcess(socket, urls) {
       totalVideos = parseInt(playlistMatch[2]);
       socket.emit('playlist-info', { processId, current: currentVideoIndex, total: totalVideos });
     }
-    // *** FIM DA CORREÇÃO ***
 
     if (output.includes('[download] Destination:')) {
       if (!isPlaylist) {
         currentVideoIndex++;
-        totalVideos = urls.length;
+        totalVideos = urls.length; // Atualiza total se não for playlist
       }
       currentTitle = path.basename(output.split('Destination:')[1].trim()).replace(/\.[^/.]+$/, "");
       socket.emit('video-info', { processId, title: currentTitle, current: currentVideoIndex, total: totalVideos });
@@ -136,39 +156,41 @@ function startDownloadProcess(socket, urls) {
         socket.emit('download-progress', {
           processId,
           progress: progress,
-          message: `📥 Baixando [${currentVideoIndex}/${totalVideos}] ${currentTitle}: ${progress.toFixed(1)}%`
+          message: `📥 [MP3] Baixando [${currentVideoIndex}/${totalVideos}] ${currentTitle}: ${progress.toFixed(1)}%`
         });
       }
     }
 
     if (output.includes('[ExtractAudio] Destination:')) {
-      lastConversionPath = output.split('Destination:')[1].trim(); 
+      lastConversionPath = output.split('Destination:')[1].trim(); // Caminho do MP3 no temp
       socket.emit('conversion-started', {
         processId,
-        message: `🔄 Convertendo [${currentVideoIndex}/${totalVideos}] ${currentTitle}...`
+        message: `🔄 [MP3] Convertendo [${currentVideoIndex}/${totalVideos}] ${currentTitle}...`
       });
     }
 
     if (output.includes('Deleting original file') && lastConversionPath) {
       const finalFilename = path.basename(lastConversionPath);
-      const finalDestPath = path.join(downloadsDir, finalFilename);
+      const finalDestPath = path.join(downloadsDir, finalFilename); // Caminho final
 
       try {
+        // Move o arquivo final do temp para downloads
         fs.renameSync(lastConversionPath, finalDestPath); 
-        console.log(`Arquivo movido para: ${finalDestPath}`);
+        console.log(`[MP3] Arquivo movido para: ${finalDestPath}`);
+        generatedFiles.push(finalDestPath); // Adiciona ao array para zippar depois
 
         socket.emit('conversion-complete', {
           processId,
-          message: `✅ Convertido [${currentVideoIndex}/${totalVideos}]: ${finalFilename}`,
+          message: `✅ [MP3] Convertido: ${finalFilename}`,
           filename: finalFilename, 
           current: currentVideoIndex,
           total: totalVideos
         });
 
       } catch (moveErr) {
-        console.error('Erro ao mover arquivo:', moveErr);
+        console.error('[MP3] Erro ao mover arquivo:', moveErr);
         hasError = true; 
-        socket.emit('process-error', { processId, error: 'Erro ao salvar arquivo final.' });
+        socket.emit('process-error', { processId, error: 'Erro ao salvar arquivo MP3 final.' });
       }
       lastConversionPath = null;
     }
@@ -176,78 +198,252 @@ function startDownloadProcess(socket, urls) {
 
   ytdlp.stderr.on('data', (data) => {
     const errorOutput = data.toString().trim();
-    if (errorOutput) console.log('yt-dlp stderr:', errorOutput);
+    if (errorOutput) console.log('[MP3 yt-dlp stderr]:', errorOutput);
     if (errorOutput.includes('WARNING:')) return; 
     if (errorOutput.includes('ERROR') || errorOutput.includes('FATAL')) {
       hasError = true; 
-      socket.emit('process-error', {
-        processId,
-        error: errorOutput
-      });
+      socket.emit('process-error', { processId, error: errorOutput });
     }
   });
 
   ytdlp.on('close', (code) => {
-    console.log(`Processo finalizado com código: ${code}`);
+    console.log(`[MP3] Processo finalizado com código: ${code}`);
 
-    if (hasError) {
-      console.log('Processo finalizado, mas um erro interno (ex: mover arquivo) ocorreu.');
+    if (hasError) { // Se já emitimos um erro (ex: stderr ou mover arquivo), não faz mais nada.
       fs.rm(jobDir, { recursive: true, force: true }, () => {}); 
       return; 
     }
-    if (code === 0) {
-      // Passamos o total real de vídeos, se for playlist, ou o contador
-      const finalCount = isPlaylist ? totalVideos : currentVideoIndex;
-      handleJobCompletion(socket, processId, jobDir, finalCount);
-    } else {
+    
+    // SUCESSO: Se geramos arquivos, vamos para a conclusão, *mesmo que o código seja 1*.
+    if (generatedFiles.length > 0) {
+      handleJobCompletion(socket, processId, jobDir, generatedFiles, 'MP3');
+    }
+    // FALHA REAL: Se o código não é 0 E não geramos arquivos
+    else if (code !== 0) {
       socket.emit('process-error', {
         processId,
-        error: `Processo falhou com código: ${code}`
+        error: `[MP3] Processo falhou (código: ${code}). Verifique o link.`
       });
       fs.rm(jobDir, { recursive: true, force: true }, () => {});
     }
-  });
-
-  ytdlp.on('error', (error) => {
-    console.error('Erro ao executar yt-dlp:', error);
-    hasError = true; 
-    socket.emit('process-error', {
-      processId,
-      error: 'Erro ao iniciar o processo de download: ' + error.message
-    });
-    fs.rm(jobDir, { recursive: true, force: true }, () => {});
+    // NADA FEITO: Código 0, mas sem arquivos (link inválido, etc.)
+    else {
+      handleJobCompletion(socket, processId, jobDir, generatedFiles, 'MP3');
+    }
   });
 }
 
 /**
- * Lida com a finalização do lote, zippando se necessário
+ * NOVO - Inicia o processo de download do TikTok (MP4)
  */
-async function handleJobCompletion(socket, processId, jobDir, totalFiles) {
-  
-  if (totalFiles > 10) {
-    socket.emit('zip-started', { processId, message: 'Compressando arquivos... Isso pode demorar.' });
+function startTikTokDownloadProcess(socket, urls) {
+  const processId = `mp4-${Date.now()}`;
+  const jobDir = path.join(tempDir, processId);
+  fs.mkdirSync(jobDir, { recursive: true });
+
+  let totalVideos = 1;
+  let currentVideoIndex = 0;
+  let isPlaylist = false;
+  let currentTitle = '';
+  let hasError = false;
+  let generatedFiles = []; // Array para rastrear arquivos finalizados
+  let currentFileDestination = null; // Rastreia o arquivo sendo baixado
+
+  socket.emit('process-started', { 
+    processId, 
+    message: `🔄 [MP4] Iniciando... Processando ${urls.length} entrada(s).` 
+  });
+
+  const cookieFilePath = path.join(__dirname, 'www.tiktok.com_cookies.txt');
+
+  const args = [
+    '-f', 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best', // Formato MP4
+    '--output', `${jobDir}/%(title).100s.%(ext)s`, // Salva no temp dir
+    '--newline',
+    // --- ATUALIZADO ---
+    // Manter User-Agent e Referer
+    '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36',
+    '--referer', 'https://www.tiktok.com/',
+    // ...urls serão adicionados depois dos cookies, se existirem
+  ];
+
+  // --- NOVO: Adiciona cookies se o arquivo existir ---
+  if (fs.existsSync(cookieFilePath)) {
+    console.log(`[MP4] Usando arquivo de cookies: ${cookieFilePath}`);
+    args.push('--cookies', cookieFilePath);
+  } else {
+    console.warn(`[MP4] Arquivo de cookies (www.tiktok.com_cookies.txt) não encontrado. Tentando sem cookies.`);
+  }
+  // --- FIM ---
+
+  // Adiciona as URLs ao final dos argumentos
+  args.push(...urls);
+
+  console.log('Executando: yt-dlp', args.join(' '));
+  const ytdlp = spawn('yt-dlp', args);
+
+  ytdlp.stdout.on('data', (data) => {
+    const output = data.toString().trim();
+    if (output) console.log('[MP4 yt-dlp]:', output);
+
+    const playlistMatch = output.match(/\[download\] Downloading (?:video|item) (\d+) of (\d+)/);
     
-    const zipName = `${processId}-Playlist.zip`;
+    if (playlistMatch) {
+      isPlaylist = true;
+      currentVideoIndex = parseInt(playlistMatch[1]);
+      totalVideos = parseInt(playlistMatch[2]);
+      socket.emit('playlist-info', { processId, current: currentVideoIndex, total: totalVideos });
+    }
+
+    if (output.includes('[download] Destination:')) {
+      if (!isPlaylist) {
+        currentVideoIndex++;
+        totalVideos = urls.length;
+      }
+      currentFileDestination = output.split('Destination:')[1].trim(); // Caminho no temp
+      currentTitle = path.basename(currentFileDestination).replace(/\.[^/.]+$/, "");
+      socket.emit('video-info', { processId, title: currentTitle, current: currentVideoIndex, total: totalVideos });
+    }
+
+    if (output.includes('[download]') && output.includes('%')) {
+      const percentMatch = output.match(/(\d+\.?\d*)%/);
+      if (percentMatch) {
+        const progress = parseFloat(percentMatch[1]);
+        socket.emit('download-progress', {
+          processId,
+          progress: progress,
+          message: `📥 [MP4] Baixando [${currentVideoIndex}/${totalVideos}] ${currentTitle}: ${progress.toFixed(1)}%`
+        });
+      }
+    }
+
+    // Detecta arquivo final (seja por merge ou download direto)
+    let finalFileReadyPath = null;
+    
+    if (output.includes('[Merger] Merging formats into "')) {
+      // O merge terminou, o arquivo final está pronto
+      finalFileReadyPath = output.split('[Merger] Merging formats into "')[1].replace(/"$/, '');
+    
+    } else if (output.includes('[download] 100%') && currentFileDestination) {
+      // Download 100%
+      // Verifica se NÃO é um arquivo temporário de merge (ex: .f137.mp4)
+      if (!/\.f\d+\./.test(currentFileDestination)) {
+        finalFileReadyPath = currentFileDestination;
+      }
+    }
+
+    if (finalFileReadyPath) {
+      const finalFilename = path.basename(finalFileReadyPath);
+      const finalDestPath = path.join(downloadsDir, finalFilename); // Caminho final
+
+      try {
+        fs.renameSync(finalFileReadyPath, finalDestPath);
+        console.log(`[MP4] Arquivo movido para: ${finalDestPath}`);
+        generatedFiles.push(finalDestPath); // Adiciona ao array para zippar
+
+        socket.emit('tiktok-file-complete', { // Novo evento
+          processId,
+          message: `✅ [MP4] Baixado: ${finalFilename}`,
+          filename: finalFilename, 
+          current: currentVideoIndex,
+          total: totalVideos
+        });
+
+      } catch (moveErr) {
+        console.error('[MP4] Erro ao mover arquivo:', moveErr);
+        hasError = true; 
+        socket.emit('process-error', { processId, error: 'Erro ao salvar arquivo MP4 final.' });
+      }
+      currentFileDestination = null; // Reseta para o próximo arquivo
+    }
+  });
+
+  ytdlp.stderr.on('data', (data) => {
+    const errorOutput = data.toString().trim();
+    if (errorOutput) console.log('[MP4 yt-dlp stderr]:', errorOutput);
+    if (errorOutput.includes('WARNING:')) return;
+    if (errorOutput.includes('ERROR') || errorOutput.includes('FATAL')) {
+      hasError = true;
+      socket.emit('process-error', { processId, error: errorOutput });
+    }
+  });
+
+  ytdlp.on('close', (code) => {
+    console.log(`[MP4] Processo finalizado com código: ${code}`);
+
+    if (hasError) { // Se já emitimos um erro (ex: stderr ou mover arquivo), não faz mais nada.
+      fs.rm(jobDir, { recursive: true, force: true }, () => {});
+      return;
+    }
+    
+    // SUCESSO: Se geramos arquivos, vamos para a conclusão, *mesmo que o código seja 1*.
+    if (generatedFiles.length > 0) {
+      handleJobCompletion(socket, processId, jobDir, generatedFiles, 'MP4');
+    } 
+    // FALHA REAL: Se o código não é 0 E não geramos arquivos
+    else if (code !== 0) { 
+      socket.emit('process-error', {
+        processId,
+        error: `[MP4] Processo falhou (código: ${code}). Verifique o link.`
+      });
+      fs.rm(jobDir, { recursive: true, force: true }, () => {});
+    } 
+    // NADA FEITO: Código 0, mas sem arquivos (link inválido, etc.)
+    else { 
+      handleJobCompletion(socket, processId, jobDir, generatedFiles, 'MP4');
+    }
+  });
+}
+
+
+/**
+ * ATUALIZADO - Lida com a finalização do lote (MP3 ou MP4)
+ * Zips se > 10 arquivos, caso contrário, apenas finaliza.
+ */
+async function handleJobCompletion(socket, processId, jobDir, generatedFiles, type = 'MP3') {
+  
+  const totalFiles = generatedFiles.length;
+  console.log(`[${type}] Finalização do trabalho. ${totalFiles} arquivos gerados.`);
+
+  if (totalFiles > 10) {
+    socket.emit('zip-started', { processId, message: `Compressando ${totalFiles} arquivos... Isso pode demorar.` });
+    
+    const zipName = `${processId}-Arquivos.zip`;
     const zipPath = path.join(downloadsDir, zipName);
     
     try {
-      await zipDirectory(jobDir, zipPath);
+      // Cria o zip a partir dos arquivos que já estão no diretório 'downloads'
+      await zipGeneratedFiles(generatedFiles, zipPath);
       
       socket.emit('zip-complete', {
         processId,
         filename: zipName, 
         message: `✅ Lote grande! Arquivo ZIP criado: ${zipName}`
       });
+
+      // (Opcional) Apaga os arquivos individuais após o zip
+      generatedFiles.forEach(filePath => {
+        fs.unlink(filePath, err => {
+          if (err) console.error(`Erro ao apagar arquivo pós-zip: ${filePath}`, err);
+        });
+      });
       
     } catch (zipError) {
-      console.error('Erro ao criar ZIP:', zipError);
+      console.error(`[${type}] Erro ao criar ZIP:`, zipError);
       socket.emit('process-error', { processId, error: 'Falha ao criar arquivo ZIP.' });
     }
     
-  } else {
+  } else if (totalFiles > 0) {
+    // Menos de 10 arquivos, o cliente já tem os links individuais
     socket.emit('process-complete', {
       processId,
-      message: '🎉 Processo concluído com sucesso!'
+      message: `🎉 Processo concluído com sucesso! ${totalFiles} arquivo(s) pronto(s).`
+    });
+  } else {
+    // Nenhum arquivo foi gerado
+     socket.emit('process-error', {
+      processId,
+      error: 'Nenhum arquivo foi baixado. Verifique os links.'
     });
   }
 
@@ -260,24 +456,33 @@ async function handleJobCompletion(socket, processId, jobDir, totalFiles) {
 
 
 /**
- * Função utilitária para criar ZIP de um diretório
+ * Função utilitária para criar ZIP a partir de uma lista de caminhos de arquivos
  */
-function zipDirectory(sourceDir, outPath) {
+function zipGeneratedFiles(filePaths, outPath) {
   const archive = archiver('zip', { zlib: { level: 9 } });
   const stream = fs.createWriteStream(outPath);
 
   return new Promise((resolve, reject) => {
     archive
-      .directory(sourceDir, false)
       .on('error', err => reject(err))
       .pipe(stream);
+
+    // Adiciona cada arquivo ao zip
+    filePaths.forEach(filePath => {
+      archive.file(filePath, { name: path.basename(filePath) });
+    });
 
     stream.on('close', () => resolve());
     archive.finalize();
   });
 }
 
+// --- Iniciar o Servidor ---
 server.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Servidor YouTube MP3 Converter rodando na porta ${PORT}`);
+  console.log(`🚀 Servidor Downloader Pro rodando na porta ${PORT}`);
   console.log(`💡 Acesse em http://localhost:${PORT} ou pela sua rede local.`);
 });
+
+
+
+
