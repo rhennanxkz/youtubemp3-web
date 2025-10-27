@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Docs - Downloader Pro</title>
+    
+    <style>
+        /* Variáveis de Tema (Exemplo) */
+        :root {
+            --primary-color: #007bff;
+            --secondary-color: #6c757d;
+            --background-color: #121212;
+            --card-bg-color: #1e1e1e;
+            --text-color: #f1f1f1;
+            --border-color: #333;
+            --border-radius: 8px;
+            --border-radius-sm: 4px;
+        }
+
+        [data-theme="light"] {
+            --primary-color: #007bff;
+            --secondary-color: #6c757d;
+            --background-color: #f4f7f6;
+            --card-bg-color: #ffffff;
+            --text-color: #212529;
+            --border-color: #dee2e6;
+        }
+
+        /* Reset e Base */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 1.5rem;
+        }
+
+        a {
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+
+        /* Header e Navegação */
+        header {
+            background-color: var(--card-bg-color);
+            padding: 1rem 0;
+            border-bottom: 1px solid var(--border-color);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        header .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        header h1 {
+            font-size: 1.8rem;
+            margin: 0;
+        }
+        header h1 a {
+            font-weight: bold;
+            color: var(--text-color);
+            text-decoration: none;
+        }
+
+        header nav ul {
+            display: flex;
+            list-style: none;
+            gap: 1.5rem;
+        }
+
+        header nav a {
+            color: var(--text-color);
+            font-weight: 500;
+            text-decoration: none;
+            padding: 0.5rem 0;
+            transition: color 0.2s;
+        }
+        header nav a:hover, header nav a.active {
+            color: var(--primary-color);
+        }
+
+        .theme-btn {
+            background: none;
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            font-size: 1.2rem;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .theme-btn:hover {
+            background-color: var(--border-color);
+        }
+
+        /* Main e Footer */
+        main {
+            padding: 2rem 0;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 2rem 0;
+            margin-top: 2rem;
+            border-top: 1px solid var(--border-color);
+            color: var(--secondary-color);
+        }
+
+        /* Estilos Específicos da Página API-DOCS */
+        .api-docs-container {
+            max-width: 900px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background-color: var(--card-bg-color);
+            border-radius: var(--border-radius);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .api-docs-container h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 0.5rem;
+        }
+        
+        .api-docs-container p {
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+        }
+
+        .endpoint {
+            margin-bottom: 2.5rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 1.5rem;
+        }
+        .endpoint:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+        
+        .endpoint h2 {
+            font-size: 1.75rem;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+        
+        .endpoint .method {
+            display: inline-block;
+            padding: 0.3rem 0.8rem;
+            border-radius: var(--border-radius-sm);
+            font-weight: bold;
+            font-size: 1rem;
+            margin-right: 0.5rem;
+            color: #fff;
+        }
+        
+        .method.get {
+            background-color: #007bff; /* Azul */
+        }
+        
+        .endpoint .path {
+            font-family: 'Courier New', Courier, monospace;
+            background-color: var(--border-color);
+            padding: 0.2rem 0.5rem;
+            border-radius: var(--border-radius-sm);
+            font-size: 1.1rem;
+        }
+
+        .endpoint h3 {
+            margin-top: 1.5rem;
+            margin-bottom: 0.5rem;
+            font-size: 1.25rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 5px;
+        }
+        
+        /* Bloco de Código */
+        pre {
+            background-color: #2a2a2a;
+            color: #f1f1f1;
+            padding: 1rem;
+            border-radius: var(--border-radius);
+            overflow-x: auto;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+        
+        [data-theme="light"] pre {
+             background-color: #e9ecef;
+             color: #212529;
+        }
+
+        code {
+            font-family: 'Courier New', Courier, monospace;
+        }
+        
+        /* Parâmetros da API */
+        .param {
+            margin-bottom: 0.5rem;
+        }
+        .param .name {
+            font-weight: bold;
+            font-family: 'Courier New', Courier, monospace;
+        }
+        .param .type {
+            font-style: italic;
+            color: var(--secondary-color);
+            margin-left: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="container">
+            <h1><a href="/">Downloader Pro</a></h1>
+            <nav>
+                <ul>
+                    <li><a href="/youtube-mp3">YouTube MP3</a></li>
+                    <li><a href="/tiktok-download">TikTok MP4</a></li>
+                    <li><a href="/api-docs" class="active">API Docs</a></li>
+                    <li><a href="/about">Sobre</a></li>
+                </ul>
+                <button id="theme-toggle" class="theme-btn">🌙</button>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <div class="api-docs-container">
+            <h1>Documentação da API v1 (GET)</h1>
+            <p>Use esta API para baixar programaticamente vídeos do YouTube (MP3) e TikTok (MP4). A API é assíncrona: você envia a URL e recebe de volta um link para download quando o processamento estiver concluído.</p>
+            <p><strong>URL Base:</strong> <code>http://[SEU_DOMINIO]:5000</code></p>
+
+            <section class="endpoint">
+                <h2>YouTube para MP3</h2>
+                <p>
+                    <span class="method get">GET</span>
+                    <span class="path">/api/v1/youtube-mp3</span>
+                </p>
+                <p>Converte um único vídeo do YouTube (sem playlists) para o formato MP3.</p>
+                
+                <h3>Query Parameters (Parâmetros na URL)</h3>
+                <div class="param">
+                    <span class="name">url</span>
+                    <span class="type">(string, obrigatório)</span>
+                    <p>A URL completa do vídeo do YouTube que você deseja converter.</p>
+                </div>
+
+                <h3>Exemplo de Request (cURL)</h3>
+                <pre><code>curl -X GET 'http://localhost:5000/api/v1/youtube-mp3?url=https://www.youtube.com/watch?v=dQw4w9WgXcQ'</code></pre>
+
+                <h3>Exemplo de Request (Navegador)</h3>
+                <p>Simplesmente acesse esta URL no seu navegador:</p>
+                <pre><code>http://localhost:5000/api/v1/youtube-mp3?url=https://www.youtube.com/watch?v=dQw4w9WgXcQ</code></pre>
+
+
+                <h3>Resposta de Sucesso (200 OK)</h3>
+                <pre><code>{
+    "success": true,
+    "title": "Rick Astley - Never Gonna Give You Up (Official Music Video)",
+    "filename": "Rick Astley - Never Gonna Give You Up (Official Music Video).mp3",
+    "downloadUrl": "http://localhost:5000/api/download/Rick Astley - Never Gonna Give You Up (Official Music Video).mp3"
+}</code></pre>
+
+                <h3>Resposta de Erro (400/500)</h3>
+                <pre><code>{
+    "success": false,
+    "error": "Parâmetro \"url\" é obrigatório."
+}</code></pre>
+            </section>
+
+            <section class="endpoint">
+                <h2>TikTok para MP4</h2>
+                <p>
+                    <span class="method get">GET</span>
+                    <span class="path">/api/v1/tiktok-mp4</span>
+                </p>
+                <p>Baixa um único vídeo do TikTok no formato MP4 (sem marca d'água, se possível).</p>
+                
+                <h3>Query Parameters (Parâmetros na URL)</h3>
+                 <div class="param">
+                    <span class="name">url</span>
+                    <span class="type">(string, obrigatório)</span>
+                    <p>A URL completa do vídeo do TikTok que você deseja baixar.</p>
+                </div>
+
+                <h3>Exemplo de Request (cURL)</h3>
+                <pre><code>curl -X GET 'http://localhost:5000/api/v1/tiktok-mp4?url=https://www.tiktok.com/@exemplo/video/7000000000000000000'</code></pre>
+
+                <h3>Exemplo de Request (Navegador)</h3>
+                <pre><code>http://localhost:5000/api/v1/tiktok-mp4?url=https://www.tiktok.com/@exemplo/video/7000000000000000000</code></pre>
+
+
+                <h3>Resposta de Sucesso (200 OK)</h3>
+                <pre><code>{
+    "success": true,
+    "title": "Um vídeo de exemplo do TikTok",
+    "filename": "Um vídeo de exemplo do TikTok.mp4",
+    "downloadUrl": "http://localhost:5000/api/download/Um vídeo de exemplo do TikTok.mp4"
+}</code></pre>
+
+                <h3>Resposta de Erro (400/500)</h3>
+                <pre><code>{
+    "success": false,
+    "error": "[API MP4] Processo falhou (código: 1). Verifique o link."
+}</code></pre>
+            </section>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 Downloader Pro. Todos os direitos reservados.</p>
+    </footer>
+
+    <script>
+        // Lógica simples do theme-toggle (caso não esteja em main.js)
+        const themeToggle = document.getElementById('theme-toggle');
+        const currentTheme = localStorage.getItem('theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', currentTheme);
+        themeToggle.textContent = currentTheme === 'dark' ? '☀️' : '🌙';
+
+        themeToggle.addEventListener('click', () => {
+            let newTheme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            themeToggle.textContent = newTheme === 'dark' ? '☀️' : '🌙';
+        });
+    </script>
+</body>
+</html>

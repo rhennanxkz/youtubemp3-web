@@ -33,3 +33,11 @@ body {
 .animate-fade-in {
     animation: fadeIn 0.3s ease-out;
 }
+/* Adicione isso ao seu style.css se necessário para o espaçamento */
+header nav ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    gap: 1.5rem; /* Ajuste o espaçamento conforme seu design */
+}
